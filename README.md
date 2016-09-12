@@ -6,7 +6,7 @@ Toguru client for Scala applications
 
 [![Build Status](https://travis-ci.org/AutoScout24/toguru-scala-client.svg)](https://travis-ci.org/AutoScout24/toguru-scala-client)
 
-[![Coverage Status](https://coveralls.io/repos/AutoScout24/toguru-scala-client/badge.svg)](https://coveralls.io/r/AutoScout24/toguru-scala-client)
+[![Coverage Status](https://coveralls.io/repos/github/AutoScout24/toguru-scala-client/badge.svg?branch=master)](https://coveralls.io/github/AutoScout24/toguru-scala-client?branch=master)
 
 [![Download](https://api.bintray.com/packages/autoscout24/maven/toguru-scala-client/images/download.svg) ](https://bintray.com/autoscout24/maven/toguru-scala-client/_latestVersion)
 
