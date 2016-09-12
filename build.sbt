@@ -22,7 +22,7 @@ libraryDependencies in ThisBuild ++= Seq(
   "org.mockito" % "mockito-core" % "2.0.8-beta" % "test"
 )
 
-ScoverageSbtPlugin.ScoverageKeys.coverageMinimum := 90
+ScoverageSbtPlugin.ScoverageKeys.coverageMinimum := 80
 
 ScoverageSbtPlugin.ScoverageKeys.coverageFailOnMinimum := true
 
@@ -32,4 +32,3 @@ resolvers in ThisBuild ++= Seq(
 )
 
 lazy val root = project.in( file(".") )
-
