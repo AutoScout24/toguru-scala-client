@@ -23,8 +23,8 @@ object FeatureRegistries {
       initial = (AlwaysOffFeatureRegistry, LocalDateTime.now()),
       reCreator = () => updater(),
       scheduler = scheduler,
-      reloadAfter = 5.seconds,
-      activationDelay = 3.seconds,
+      reloadAfter = 2.seconds,
+      activationDelay = 0.seconds,
       executor = executor
     )
   }
