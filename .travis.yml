@@ -26,10 +26,8 @@ notifications:
 
 after_success:
   - sbt coveralls
-
-deploy:
-  provider: script
-  script: ./publish-bintray-release.sh
-  on:
-    branch: master
-    repo: AutoScout24/toguru-scala-client
+  - if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_REPO_SLUG" = "AutoScout24/toguru" ]; then
+      if [ "$TRAVIS_BRANCH" == "master" ] || [[ $TRAVIS_TAG ]]; then
+        ./publish-bintray-release.sh
+      fi
+    fi
