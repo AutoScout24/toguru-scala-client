@@ -2,17 +2,18 @@ lazy val root = project.in( file(".") ).enablePlugins(GitVersioning)
 
 name := "toguru-scala-client"
 
-val playVersion = sys.env.getOrElse("PLAY_VERSION", "2.5.7")
-
-git.baseVersion := s"0.1.0-Play-$playVersion"
+git.baseVersion := "0.1.0"
 
 organization in ThisBuild := "com.autoscout24"
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+
+bintrayOrganization := Some("autoscout24")
 
 scalaVersion in ThisBuild := "2.11.8"
 scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature", "-Xfatal-warnings",
   "-Yno-adapted-args", "-Xmax-classfile-name", "130")
 
+val playVersion = "2.5.+"
 
 libraryDependencies in ThisBuild ++= Seq(
   "commons-io" % "commons-io" % "2.4",
