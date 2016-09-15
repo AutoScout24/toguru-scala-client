@@ -25,7 +25,11 @@ notifications:
     on_failure: always
 
 after_success:
-  - >
-      sbt coveralls &&
-      sh "$TRAVIS_BUILD_DIR/travis-ci-bintray-credentials.sh" &&
-      sbt publish
+  - sbt coveralls
+
+deploy:
+  provider: script
+  script: ./publish-bintray-release.sh
+  on:
+    branch: master
+    repo: AutoScout24/toguru-scala-client
