@@ -1,13 +1,13 @@
 package toguru.impl
 
 import org.scalatest.{FeatureSpec, MustMatchers, OptionValues}
-import toguru.ClientInfoImpl
+import toguru.ClientInfo
 
 class AlwaysOffFeatureRegistrySpec extends FeatureSpec with OptionValues with MustMatchers {
 
   feature("Features are always toggled off for AlwaysOffFeatureRegistry") {
     scenario("'xyz' feature is toggled off") {
-      AlwaysOffFeatureRegistry.feature("xyz").value.isActive(ClientInfoImpl()) must be(false)
+      AlwaysOffFeatureRegistry.feature("xyz").value.isActive(ClientInfo()) must be(false)
     }
   }
 

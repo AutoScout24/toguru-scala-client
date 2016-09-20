@@ -8,7 +8,7 @@ import org.mockito.Mockito._
 
 class FeatureImplSpec extends FeatureSpec {
 
-  val emptyClientInfo = ClientInfoImpl()
+  val emptyClientInfo = ClientInfo()
 
   feature("Standard feature activation") {
     scenario("Feature is active when always on condition is used") {
@@ -35,7 +35,7 @@ class FeatureImplSpec extends FeatureSpec {
 
   feature("God mode overriding of feature settings") {
     scenario("Overriding has precedence") {
-      val clientInfoForcedAlwaysOn = ClientInfoImpl(forcedFeatureToggle = (_) => Some(true))
+      val clientInfoForcedAlwaysOn = ClientInfo(forcedFeatureToggle = (_) => Some(true))
       val featureDescription = FeatureDescription("name", "desc", tags = None, Set(AlwaysOffCondition))
       assert(new FeatureImpl(featureDescription).isActive(clientInfoForcedAlwaysOn) === true)
     }
@@ -47,7 +47,7 @@ class FeatureImplSpec extends FeatureSpec {
     val feature = new FeatureImpl(featureDescriptionChromeOnly)
 
     scenario("Feature block 'ifActive' for chrome clients is executed") {
-      implicit val clientInfo = ClientInfoImpl(Some("Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"))
+      implicit val clientInfo = ClientInfo(Some("Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"))
       var evaluated = false
 
       val result = feature.ifActive {
@@ -60,7 +60,7 @@ class FeatureImplSpec extends FeatureSpec {
     }
 
     scenario("Feature block 'notActive' for non chrome clients is executed") {
-      implicit val clientInfo = ClientInfoImpl(Some("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0"))
+      implicit val clientInfo = ClientInfo(Some("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0"))
       var evaluated = false
 
       val result = feature.ifNotActive {
@@ -87,13 +87,13 @@ class FeatureImplSpec extends FeatureSpec {
 
   feature("AlwaysOn/Off Feature") {
     scenario("AlwaysOnFeature activates feature when no GodMode is present") {
-      val clientInfo = ClientInfoImpl(forcedFeatureToggle = (_) => None)
+      val clientInfo = ClientInfo(forcedFeatureToggle = (_) => None)
       assert(AlwaysOnFeature("some-feature").isActive(clientInfo) === true)
     }
 
     scenario("GodMode wins over AlwaysOn Feature") {
       val featureName = "forced-feature-name"
-      val clientInfo = ClientInfoImpl(forcedFeatureToggle = {
+      val clientInfo = ClientInfo(forcedFeatureToggle = {
         case n if n == featureName => Some(false)
         case _ => None
       }
@@ -102,14 +102,14 @@ class FeatureImplSpec extends FeatureSpec {
     }
 
     scenario("AlwaysOffFeature deactivates feature when no GodMode is present") {
-      val clientInfo = ClientInfoImpl(forcedFeatureToggle = (_) => None)
+      val clientInfo = ClientInfo(forcedFeatureToggle = (_) => None)
       assert(AlwaysOffFeature("some-feature").isActive(clientInfo) === false)
     }
 
     scenario("GodMode wins over AlwaysOff Feature") {
       val featureName = "forced-feature-name"
 
-      val clientInfo = ClientInfoImpl(forcedFeatureToggle = {
+      val clientInfo = ClientInfo(forcedFeatureToggle = {
         case n if n == featureName => Some(true)
         case _ => None
       }

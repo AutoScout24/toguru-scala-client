@@ -3,7 +3,7 @@ package toguru.impl
 import java.util.UUID
 
 import org.scalatest.{FeatureSpec, MustMatchers, OptionValues}
-import toguru.ClientInfoImpl
+import toguru.ClientInfo
 import toguru.api.FeatureImpl
 import toguru.impl.PollingRegistryUpdater.{EventPublisher, TogglePoller}
 
@@ -28,7 +28,7 @@ class PollingRegistryUpdaterSpec extends FeatureSpec with OptionValues with Must
 
       val toggleOne = registry.feature("toggle-one").value.asInstanceOf[FeatureImpl].desc
       val toggleTwo = registry.feature("toggle-two").value.asInstanceOf[FeatureImpl].desc
-      val clientInfo = ClientInfoImpl(uuid = Some(UUID.fromString("00000000-0000-0000-0000-000000000000")))
+      val clientInfo = ClientInfo(uuid = Some(UUID.fromString("00000000-0000-0000-0000-000000000000")))
 
       toggleOne.name must be("toggle-one")
       toggleOne.tags must be(Some(Set("toguru")))

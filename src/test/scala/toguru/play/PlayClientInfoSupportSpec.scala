@@ -2,8 +2,8 @@ package toguru.play
 
 import java.util.{UUID, Locale}
 
-import toguru.{ClientInfoImpl, ClientInfo}
-import org.scalatest.{FeatureSpec, FunSpec}
+import toguru.ClientInfo
+import org.scalatest.FeatureSpec
 import play.api.http.HeaderNames
 import play.api.mvc.{RequestHeader, Cookie, Cookies}
 import play.api.test.FakeHeaders
@@ -19,7 +19,7 @@ class PlayClientInfoSupportSpec extends FeatureSpec {
 
     implicit def requestToClientInfo(implicit requestHeader: RequestHeader): ClientInfo = {
       import PlayClientInfoSupport._
-      ClientInfoImpl(userAgent, localeFromCookieValue("culture"), uuidFromCookieValue("as24Visitor"), forcedFeatureToggle)
+      ClientInfo(userAgent, localeFromCookieValue("culture"), uuidFromCookieValue("as24Visitor"), forcedFeatureToggle)
     }
   }
 

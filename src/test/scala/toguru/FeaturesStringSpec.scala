@@ -40,12 +40,12 @@ class FeaturesStringSpec extends FeatureSpec with ShouldMatchers {
   feature("Can build feature strings from features and client info") {
 
     scenario("returns empty string when there are no features") {
-      implicit val clientInfo: ClientInfo = ClientInfoImpl()
+      implicit val clientInfo: ClientInfo = ClientInfo()
       FeaturesString.buildFeaturesString(Seq[Feature]()) should be("")
     }
 
     scenario("returns the correct feature when it is enforced to be true") {
-      implicit val clientInfo: ClientInfo = ClientInfoImpl()
+      implicit val clientInfo: ClientInfo = ClientInfo()
       val features: Seq[Feature] = Seq(
         new FeatureImpl(FeatureDescription("feature1", "it's a feature", None, Set(AlwaysOnCondition)))
       )
@@ -54,7 +54,7 @@ class FeaturesStringSpec extends FeatureSpec with ShouldMatchers {
     }
 
     scenario("returns the disabled feature when it is enforced to be false") {
-      implicit val clientInfo: ClientInfo = ClientInfoImpl()
+      implicit val clientInfo: ClientInfo = ClientInfo()
       val features: Seq[Feature] = Seq(
         new FeatureImpl(FeatureDescription("feature1", "it's a feature", None, Set(AlwaysOffCondition)))
       )
@@ -62,7 +62,7 @@ class FeaturesStringSpec extends FeatureSpec with ShouldMatchers {
     }
 
     scenario("returns the correct feature when enforced to be false but the client overrides to be true") {
-      implicit val clientInfo: ClientInfo = ClientInfoImpl(None, None, None, forceFeatureTo("feature1", enabled = true))
+      implicit val clientInfo: ClientInfo = ClientInfo(None, None, None, forceFeatureTo("feature1", enabled = true))
       val features: Seq[Feature] = Seq(
         new FeatureImpl(FeatureDescription("feature1", "it's a feature", None, Set(AlwaysOffCondition)))
       )
@@ -70,7 +70,7 @@ class FeaturesStringSpec extends FeatureSpec with ShouldMatchers {
     }
 
     scenario("returns the disabled feature when enforced to be true but the client overrides to be false") {
-      implicit val clientInfo: ClientInfo = ClientInfoImpl(None, None, None, forceFeatureTo("feature1", enabled = false))
+      implicit val clientInfo: ClientInfo = ClientInfo(None, None, None, forceFeatureTo("feature1", enabled = false))
       val features: Seq[Feature] = Seq(
         new FeatureImpl(FeatureDescription("feature1", "it's a feature", None, Set(AlwaysOnCondition)))
       )
@@ -78,7 +78,7 @@ class FeaturesStringSpec extends FeatureSpec with ShouldMatchers {
     }
 
     scenario("returns multiple features separated by a pipe") {
-      implicit val clientInfo: ClientInfo = ClientInfoImpl()
+      implicit val clientInfo: ClientInfo = ClientInfo()
       val features: Seq[Feature] = Seq(
         new FeatureImpl(FeatureDescription("feature1", "it's a feature", None, Set(AlwaysOffCondition))),
         new FeatureImpl(FeatureDescription("feature2", "it's another feature", None, Set(AlwaysOnCondition)))

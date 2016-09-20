@@ -3,7 +3,7 @@ package toguru.impl
 import java.time.LocalDateTime
 
 import akka.actor.ActorSystem
-import toguru.ClientInfoImpl
+import toguru.ClientInfo
 import toguru.api.Feature.FeatureName
 import toguru.api.{AlwaysOffFeature, AlwaysOnFeature, Feature, FeatureRegistry}
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
@@ -40,7 +40,7 @@ class ReloadingFeatureRegistrySpec extends FeatureSpec with BeforeAndAfterAll wi
       val reloadingFeatureRegistry =
         new ReloadingFeatureRegistry(initial, subsequent, testActorSystem.scheduler, 1 seconds, 2 seconds, scala.concurrent.ExecutionContext.Implicits.global)
 
-      val clientInfo = ClientInfoImpl()
+      val clientInfo = ClientInfo()
       reloadingFeatureRegistry.feature("featureName").value.isActive(clientInfo) must be(false)
 
       eventually {

@@ -2,7 +2,7 @@ package toguru.impl
 
 import java.util.UUID
 
-import toguru.ClientInfoImpl
+import toguru.ClientInfo
 import org.scalatest.{FeatureSpec, MustMatchers}
 
 class UuidDistributionConditionSpec extends FeatureSpec with MustMatchers {
@@ -28,7 +28,7 @@ class UuidDistributionConditionSpec extends FeatureSpec with MustMatchers {
       1 to 1000 foreach {
         _ =>
           val uuid = UUID.randomUUID()
-          val info = ClientInfoImpl(uuid = Some(uuid))
+          val info = ClientInfo(uuid = Some(uuid))
           UuidDistributionCondition.apply(1 to 100).applies(info) must be(true)
       }
     }
