@@ -1,16 +1,11 @@
 package toguru.impl
 
 import java.math.BigInteger
-import java.util.{UUID, Locale}
+import java.util.{Locale, UUID}
 
-import toguru.ClientInfo
-import toguru.ClientInfo.UserAgent
 import toguru.impl.LocaleSupport._
-import UuidDistributionCondition._
-
-sealed trait Condition {
-  def applies(clientInfo: ClientInfo): Boolean
-}
+import toguru.api.{ClientInfo, Condition}
+import toguru.api.ClientInfo.UserAgent
 
 case object AlwaysOnCondition extends Condition {
   override def applies(clientInfo: ClientInfo): Boolean = true

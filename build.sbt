@@ -19,6 +19,7 @@ libraryDependencies in ThisBuild ++= Seq(
   "commons-io" % "commons-io" % "2.4",
   "org.scalactic" %% "scalactic" % "2.2.5",
   "org.scalaj" %% "scalaj-http" % "2.3.0",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
   "com.typesafe.play" %% "play-json" % playVersion,
   "com.typesafe.play" %% "play" % playVersion % "optional",
   "com.typesafe.play" %% "play-test" % playVersion % "optional",

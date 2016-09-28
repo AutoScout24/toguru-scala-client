@@ -2,28 +2,28 @@ package toguru.impl
 
 import java.util.Locale
 
-import org.scalatest.{FeatureSpec, FunSuite}
+import org.scalatest.WordSpec
 
-class LocaleSupportSpec extends FeatureSpec {
+class LocaleSupportSpec extends WordSpec {
 
   import LocaleSupport.RichLocale
 
-  feature("Country extraction from locale") {
-    scenario("Country gets successfully extracted") {
+  "Country extraction from locale" should {
+    "Country gets successfully extracted" in {
       assert(Locale.GERMANY.country === Some("DE"))
     }
 
-    scenario("Unset country returns null for extraction") {
+    "Unset country returns null for extraction" in {
       assert(new Locale("", "").country === None)
     }
   }
 
-  feature("Lang extraction from locale") {
-    scenario("Lang gets successfully extracted") {
+  "Lang extraction from locale" should  {
+    "extract language" in {
       assert(Locale.GERMANY.lang === Some("de"))
     }
 
-    scenario("Unset lang returns null for extraction") {
+    "return null for extraction if unset" in {
       assert(new Locale("", "").lang === None)
     }
   }
