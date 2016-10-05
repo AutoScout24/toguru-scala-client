@@ -3,12 +3,12 @@ package toguru.impl
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 
+import com.hootsuite.circuitbreaker.CircuitBreakerBuilder
 import com.typesafe.scalalogging.StrictLogging
 import play.api.libs.json.Json
 import toguru.api.{Activations, Condition, DefaultActivations, Toggle}
 import toguru.impl.RemoteActivationsProvider._
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scalaj.http.Http
@@ -20,24 +20,37 @@ object RemoteActivationsProvider {
   val executor = Executors.newScheduledThreadPool(1)
   sys.addShutdownHook(executor.shutdownNow())
 
-  val executionContext = new ExecutionContext {
-    val threadPool = executor
-    def execute(runnable: Runnable) { threadPool.submit(runnable) }
-    def reportFailure(t: Throwable) {}
-  }
+  private val circuitBreaker = CircuitBreakerBuilder(
+    name = "toguru-server-breaker",
+    failLimit  = 5,
+    retryDelay = FiniteDuration(20, TimeUnit.SECONDS)
+  ).build()
 
-
-  def apply(endpointUrl: String): RemoteActivationsProvider = {
+  /**
+    * Create an activation provider that fetches the toggle activations conditions from the toguru server given.
+    *
+    * @param endpointUrl the endpoint of the toguru server, e.g. <code>http://localhost:9000</code>
+    * @param pollInterval
+    * @return
+    */
+  def apply(endpointUrl: String, pollInterval: Duration = 2.seconds): RemoteActivationsProvider = {
     val poller: TogglePoller = () => {
-      val response = Http(endpointUrl).timeout(500, 750).asString
+      val response = Http(endpointUrl + "/togglestate").timeout(500, 750).asString
       (response.code, response.body)
     }
 
-    new RemoteActivationsProvider(poller, executor)
+    new RemoteActivationsProvider(poller, executor, pollInterval)
   }
 
 }
 
+/**
+  * Fetches the toggle activation conditions from a toguru server.
+  *
+  * @param poller
+  * @param executor
+  * @param pollInterval
+  */
 class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecutorService, pollInterval: Duration = 2.seconds) extends (() => Activations) with StrictLogging {
 
   val schedule = executor.scheduleAtFixedRate(new Runnable() {
@@ -56,7 +69,7 @@ class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecuto
   implicit val toggleReads = Json.reads[ToggleState]
 
   def fetchToggleStates(): Option[Seq[ToggleState]] = {
-    Try(poller()) match {
+    Try(circuitBreaker() { poller() }) match {
       case Success((code, body)) =>
         val tryToggleStates = Try(Json.parse(body).as[Seq[ToggleState]])
         (code, tryToggleStates) match {

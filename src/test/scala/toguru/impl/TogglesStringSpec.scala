@@ -9,7 +9,7 @@ class TogglesStringSpec extends WordSpec with ShouldMatchers {
   "Parsing of forced features string" should {
 
     val forcedTogglesString = "feature1=true|feature2=false|feature3=true"
-    val forcedToggles = TogglesString.parseForcedTogglesString(forcedTogglesString)
+    val forcedToggles = TogglesString.parse(forcedTogglesString)
 
     "Existing features are correctly forced" in {
       forcedToggles("feature1").value shouldBe true
@@ -27,7 +27,7 @@ class TogglesStringSpec extends WordSpec with ShouldMatchers {
 
     "Illegal feature spec returns None for feature specified wrongly" in {
       val forcedFeaturesString = "feature1=thisiswrong|feature2=false|feature3=true"
-      val forcedFeatures = TogglesString.parseForcedTogglesString(forcedFeaturesString)
+      val forcedFeatures = TogglesString.parse(forcedFeaturesString)
 
       forcedFeatures("feature1") shouldBe None
       forcedFeatures("feature3").value shouldBe true
@@ -38,21 +38,21 @@ class TogglesStringSpec extends WordSpec with ShouldMatchers {
 
     "returns empty string when there are no features" in {
       implicit val clientInfo: ClientInfo = ClientInfo()
-      TogglesString.buildTogglesString(Map.empty) shouldBe ""
+      TogglesString.build(Map.empty) shouldBe ""
     }
 
     "returns the correct feature when it is enforced to be true" in {
       implicit val clientInfo: ClientInfo = ClientInfo()
       val toggleStates = Map("feature1" -> true)
 
-      TogglesString.buildTogglesString(toggleStates) shouldBe "feature1=true"
+      TogglesString.build(toggleStates) shouldBe "feature1=true"
     }
 
     "returns the disabled feature when it is enforced to be false" in {
       implicit val clientInfo: ClientInfo = ClientInfo()
       val toggleStates = Map("feature1" -> false)
 
-      TogglesString.buildTogglesString(toggleStates) shouldBe "feature1=false"
+      TogglesString.build(toggleStates) shouldBe "feature1=false"
     }
 
 
@@ -60,7 +60,7 @@ class TogglesStringSpec extends WordSpec with ShouldMatchers {
       implicit val clientInfo: ClientInfo = ClientInfo()
       val toggleStates = Map("feature1" -> false, "feature2" -> true)
 
-      TogglesString.buildTogglesString(toggleStates) shouldBe "feature1=false|feature2=true"
+      TogglesString.build(toggleStates) shouldBe "feature1=false|feature2=true"
     }
   }
 

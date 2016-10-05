@@ -22,5 +22,9 @@ class ActivationsSpec extends FeatureSpec with ShouldMatchers with MockitoSugar 
 
       DefaultActivations.apply(toggle) shouldBe condition
     }
+
+    scenario("return empty service toggles") {
+      DefaultActivations.togglesFor("my-service") shouldBe Map.empty
+    }
   }
 }

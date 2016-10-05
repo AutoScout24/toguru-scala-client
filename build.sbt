@@ -10,10 +10,13 @@ licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 bintrayOrganization := Some("autoscout24")
 
 scalaVersion in ThisBuild := "2.11.8"
+
 scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature", "-Xfatal-warnings",
   "-Yno-adapted-args", "-Xmax-classfile-name", "130")
 
 val playVersion = "[2.5.0,2.6["
+
+resolvers += Resolver.jcenterRepo
 
 libraryDependencies in ThisBuild ++= Seq(
   "commons-io" % "commons-io" % "2.4",
@@ -24,7 +27,10 @@ libraryDependencies in ThisBuild ++= Seq(
   "com.typesafe.play" %% "play" % playVersion % "optional",
   "com.typesafe.play" %% "play-test" % playVersion % "optional",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-  "org.mockito" % "mockito-core" % "2.0.8-beta" % "test"
+  "com.hootsuite" %% "scala-circuit-breaker" % "1.0.0",
+  "org.mockito" % "mockito-core" % "2.0.8-beta" % "test",
+  "org.http4s" %% "http4s-dsl" % "0.14.8a" % "test",
+  "org.http4s" %% "http4s-blaze-server" % "0.14.8a" % "test"
 )
 
 ScoverageSbtPlugin.ScoverageKeys.coverageMinimum := 80

@@ -16,13 +16,6 @@ object Activations {
     */
   def fromEndpoint(endpoint: String): Activations.Provider = RemoteActivationsProvider(endpoint)
 
-  /**
-    * Creates an activation provider that falls back to each toggle's default activation condition.
-    *
-    * @return
-    */
-  def default: Activations.Provider = () => DefaultActivations
-
 }
 
 trait Activations {

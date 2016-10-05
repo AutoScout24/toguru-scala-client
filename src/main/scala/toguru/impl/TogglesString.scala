@@ -16,7 +16,7 @@ object TogglesString {
     * @return a function that can check if a given feature should be forced to be in the given state (true| false). The
     *         feature name is case insensitive.
    */
-  def parseForcedTogglesString(togglesString: String): ToggleId => Option[Boolean] = {
+  def parse(togglesString: String): ToggleId => Option[Boolean] = {
     featureName =>
       val map = togglesString.split('|').toList.flatMap {
         singleFeature =>
@@ -36,7 +36,6 @@ object TogglesString {
     * @return A feature string in the format of feature1=true|feature2=false|feature3=true. Where all feature objects in
     *         `features` are covered in the output.
     */
-  def buildTogglesString(toggles: Map[ToggleId,Boolean]): String =
-    toggles.map { case (id, on) => s"$id=$on" }.mkString("|")
+  def build(toggles: Map[ToggleId,Boolean]): String = toggles.map { case (id, on) => s"$id=$on" }.mkString("|")
 
 }

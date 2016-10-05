@@ -7,47 +7,50 @@ import play.api.i18n.Lang
 import play.api.mvc._
 import toguru.impl.TogglesString._
 import toguru.api.Toggle.ToggleId
-import toguru.api.{Activations, ClientInfo, Toggling, TogglingInfo}
+import toguru.api._
 
 import scala.language.implicitConversions
 import scala.concurrent.Future
 import scala.util.Try
 
 /**
- * Default support methods for creating a ClientInfo from a Play Request and for toggling within play actions.
- *
- * If you are fine with the way this object extracts the locale, UUID, and forced feature activation string from the play
- * request header you have to write something like this in your app, and let your controllers extend it while providing the activations provider
- * via injection in your Controller classes. The activations provider can be created via toguru.api.Activations.fromEndpoint
- *
- * {{{
-  abstract class ToggedController(activations: Activations.Provider) extends Controller {
-    import PlaySupport._
-
-    val client: ClientProvider = { implicit request =>
-      ClientInfo(userAgent, localeFromCookieValue("culture"), uuidFromCookieValue("myVisitor"), forcedToggle)
-    }
-
-    val ToggledAction = PlaySupport.ToggledAction(client, activations)
+  * Default support methods for creating a ClientInfo from a Play Request and for toggling within play actions.
+  *
+  * If you are fine with the way this object extracts the locale, UUID, and forced feature activation string from the play
+  * request header you have to write something like this in your app, and let your controllers extend it while providing
+  * the toguru client via injection in your Controller classes. The toguru client can be created with the toguruClient
+  * methods of this companion object.
+  *
+  * {{{
+  abstract class ToggledController(toguru: PlayToguruClient) extends Controller {
+    val ToggledAction = PlaySupport.ToggledAction(toguru)
   }
 
-  class MyController @Inject()(activations: Activations.Provider) extends ToggedController(activations) {
-    val toggle = Toggle("toggle-1")
+  class MyController @Inject()(toguru: PlayToguruClient) extends ToggledController(toguru) {
 
-    def myAction = ToggledAction { implicit request =>
+    def myAction = ToggledAction { (request: ToggledRequest[AnyContent]) =>
       if(toggle.isOn)
-        Ok("toggle on")
+        Ok("Toggle is on")
       else
-        Ok("toggle off")
+        Ok("Toggle is off")
     }
   }
  }}}
- * You can also create your own Toggling instance if you need to wrap the request on your own:
- * {{{
-  class MyControllerWithOwnTogglingInfo @Inject()(activations: Activations.Provider) extends ToggedController(activations) {
+  * In case you already have a custom request in your app, consider extending it by applying the [[toguru.api.Toggling]]
+  * trait:
+  * {{{
+  class MyRequest[A](toguru: PlayToguruClient, request : Request[A]) extends WrappedRequest[A](request) with Toggling {
+    override val client = toguru.clientProvider(request)
+
+    override val activations = toguru.activationsProvider()
+  }
+  * }}}
+  * You can also create your own Toggling instance if you need to wrap the request on your own:
+  * {{{
+  class MyControllerWithOwnTogglingInfo @Inject()(toguru: PlayToguruClient) extends Controller {
 
     def myAction = Action { request =>
-      implicit val toggling = PlaySupport.togglingInfo(request, client, activations)
+      implicit val toggling = toguru(request)
 
       if(toggle.isOn)
         Ok("Toggle is on")
@@ -59,34 +62,65 @@ import scala.util.Try
  */
 object PlaySupport {
 
-  type ClientProvider = Request[_] => ClientInfo
+  type PlayToguruClient = ToguruClient[Request[_]]
 
-  def togglingInfo(request: Request[_], client: ClientProvider, activations: Activations.Provider) =
-    TogglingInfo(client(request), activations())
+  type PlayClientProvider = ClientInfo.Provider[Request[_]]
+
+  /**
+    * Creates a new toguru client based on the given client provider.
+    *
+    * @param clientProvider the client provider to create [[toguru.api.ClientInfo]]s from [[play.api.mvc.Request]]s.
+    * @param endpointUrl the toguru server to use, e.g. <code>http://localhost:9000</code>
+    * @return
+    */
+  def toguruClient(clientProvider: ClientInfo.Provider[Request[_]], endpointUrl: String): PlayToguruClient =
+    new ToguruClient(clientProvider, Activations.fromEndpoint(endpointUrl))
+
+  /**
+    * Creates a new toguru client with forced test activations.
+    *
+    * @param clientProvider the client provider to create [[toguru.api.ClientInfo]]s from [[play.api.mvc.Request]]s.
+    * @param testActivations the acrt
+    * @return
+    */
+  def toguruClient(clientProvider: ClientInfo.Provider[Request[_]], testActivations: Activations.Provider): PlayToguruClient =
+    new ToguruClient(clientProvider, testActivations)
+
 
   /**
     * Use this method to create your toggled actions based on a client provider and a toggle activation provider.
     *
-    * @see [[toguru.api.Activations]], [[toguru.test.TestActivations]] for activations in tests
-    *
-    * @param clientProvider
-    * @param activationsProvider
+    * @see [[toguru.play.PlaySupport$#toguruClient]]
+    * @param toguruClient the play toguru client to use
     * @return
     */
-  def ToggledAction(clientProvider: ClientProvider, activationsProvider: Activations.Provider): ActionBuilder[ToggledRequest] =
-    Action andThen TogglingRefiner(clientProvider, activationsProvider)
+  def ToggledAction(toguruClient: PlayToguruClient): ActionBuilder[ToggledRequest] =
+    Action andThen TogglingRefiner(toguruClient)
+
+  /**
+    * Enriches the request with toggling information. If you have an own enriched class already, consider applying the
+    * trait [[toguru.api.Toggling]] to your request class, and implementing it e.g. in this way:
+    * {{{
+      class MyRequest[A](toguru: PlayToguruClient, request : Request[A]) extends WrappedRequest[A](request) with Toggling {
+        override val client = toguru.clientProvider(request)
+
+        override val activations = toguru.activationsProvider()
+      }
+    * }}}
+    *
+    * @param toguruClient the toguru client to use.
+    */
+  def TogglingRefiner[_](toguruClient: PlayToguruClient) =
+    new ActionRefiner[Request, ToggledRequest] {
+      def refine[A](request: Request[A]) = Future.successful {
+        Right(new ToggledRequest[A](toguruClient.clientProvider(request), toguruClient.activationsProvider(), request))
+      }
+    }
 
   class ToggledRequest[A](
            val client: ClientInfo,
            val activations: Activations,
            request : Request[A]) extends WrappedRequest[A](request) with Toggling
-
-  def TogglingRefiner[_](clientProvider: ClientProvider, activationsProvider: Activations.Provider) =
-    new ActionRefiner[Request, ToggledRequest] {
-      def refine[A](request: Request[A]) = Future.successful {
-        Right(new ToggledRequest[A](clientProvider(request), activationsProvider(), request))
-      }
-    }
 
   def userAgent(implicit requestHeader: RequestHeader) = requestHeader.headers.get(HeaderNames.USER_AGENT)
 
@@ -104,10 +138,10 @@ object PlaySupport {
 
     val headers = lowerCaseKeys(requestHeader.headers.toSimpleMap)
     lazy val maybeForcedFromHeader = headers.get("x-toguru").orElse(headers.get("toguru")).
-      flatMap(togglesString => parseForcedTogglesString(togglesString)(toggleId))
+      flatMap(togglesString => parse(togglesString)(toggleId))
     lazy val maybeForcedFromCookie = requestHeader.cookies.get("toguru")
       .orElse(requestHeader.cookies.get("toguru"))
-      .flatMap(cookie => parseForcedTogglesString(cookie.value)(toggleId))
+      .flatMap(cookie => parse(cookie.value)(toggleId))
 
     lazy val lowerCasedKeysQueryStringMap = lowerCaseKeys(requestHeader.queryString)
 
@@ -118,7 +152,7 @@ object PlaySupport {
         maybeToggleString.map {
           case Nil => None
           case toggleString :: _ => // we ignore toggles defined twice by the client
-            parseForcedTogglesString(toggleString)(toggleId)
+            parse(toggleString)(toggleId)
         }.getOrElse(None)
       }
     }

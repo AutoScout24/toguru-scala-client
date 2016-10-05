@@ -13,4 +13,7 @@ case class ClientInfo(
 
 object ClientInfo {
   type UserAgent = String
+
+  type Provider[T] = T => ClientInfo
+
 }
