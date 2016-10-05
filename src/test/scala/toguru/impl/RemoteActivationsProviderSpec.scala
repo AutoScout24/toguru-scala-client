@@ -1,11 +1,13 @@
 package toguru.impl
 
+import java.net.ServerSocket
 import java.util.concurrent.Executors
 
 import org.http4s.server.blaze.BlazeBuilder
 import org.scalatest.{OptionValues, ShouldMatchers, WordSpec}
 import toguru.api.{Condition, DefaultActivations, Toggle}
 import toguru.impl.RemoteActivationsProvider.TogglePoller
+
 import scala.concurrent.duration._
 
 class RemoteActivationsProviderSpec extends WordSpec with OptionValues with ShouldMatchers {
@@ -95,13 +97,14 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
       val service = HttpService {
         case _ => Ok("""[{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"rolloutPercentage":20}]""")
       }
-      val server = BlazeBuilder.bindHttp(9000, "localhost").mountService(service, "/togglestate").run
+      val port = freePort
+      val server = BlazeBuilder.bindHttp(port, "localhost").mountService(service, "/togglestate").run
 
       val rolloutCondition = Condition.UuidRange(1 to 20)
 
-      val provider = RemoteActivationsProvider("http://localhost:9000", pollInterval = 100.milliseconds)
+      val provider = RemoteActivationsProvider(s"http://localhost:$port", pollInterval = 100.milliseconds)
 
-      waitFor(20, 100.millis) {
+      waitFor(100, 100.millis) {
         provider.apply() != DefaultActivations
       }
 
@@ -134,5 +137,12 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
     }
 
     success shouldBe true
+  }
+
+  def freePort: Int = {
+    val socket = new ServerSocket(0)
+    val port = socket.getLocalPort
+    socket.close()
+    port
   }
 }
