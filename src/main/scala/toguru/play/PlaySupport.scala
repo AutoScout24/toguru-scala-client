@@ -62,10 +62,6 @@ import scala.util.Try
  */
 object PlaySupport {
 
-  type PlayToguruClient = ToguruClient[Request[_]]
-
-  type PlayClientProvider = ClientInfo.Provider[Request[_]]
-
   /**
     * Creates a new toguru client based on the given client provider.
     *
@@ -73,7 +69,7 @@ object PlaySupport {
     * @param endpointUrl the toguru server to use, e.g. <code>http://localhost:9000</code>
     * @return
     */
-  def toguruClient(clientProvider: ClientInfo.Provider[Request[_]], endpointUrl: String): PlayToguruClient =
+  def toguruClient(clientProvider: PlayClientProvider, endpointUrl: String): PlayToguruClient =
     new ToguruClient(clientProvider, Activations.fromEndpoint(endpointUrl))
 
   /**
@@ -83,9 +79,8 @@ object PlaySupport {
     * @param testActivations the acrt
     * @return
     */
-  def toguruClient(clientProvider: ClientInfo.Provider[Request[_]], testActivations: Activations.Provider): PlayToguruClient =
+  def toguruClient(clientProvider: PlayClientProvider, testActivations: Activations.Provider): PlayToguruClient =
     new ToguruClient(clientProvider, testActivations)
-
 
   /**
     * Use this method to create your toggled actions based on a client provider and a toggle activation provider.
@@ -95,32 +90,7 @@ object PlaySupport {
     * @return
     */
   def ToggledAction(toguruClient: PlayToguruClient): ActionBuilder[ToggledRequest] =
-    Action andThen TogglingRefiner(toguruClient)
-
-  /**
-    * Enriches the request with toggling information. If you have an own enriched class already, consider applying the
-    * trait [[toguru.api.Toggling]] to your request class, and implementing it e.g. in this way:
-    * {{{
-      class MyRequest[A](toguru: PlayToguruClient, request : Request[A]) extends WrappedRequest[A](request) with Toggling {
-        override val client = toguru.clientProvider(request)
-
-        override val activations = toguru.activationsProvider()
-      }
-    * }}}
-    *
-    * @param toguruClient the toguru client to use.
-    */
-  def TogglingRefiner[_](toguruClient: PlayToguruClient) =
-    new ActionRefiner[Request, ToggledRequest] {
-      def refine[A](request: Request[A]) = Future.successful {
-        Right(new ToggledRequest[A](toguruClient.clientProvider(request), toguruClient.activationsProvider(), request))
-      }
-    }
-
-  class ToggledRequest[A](
-           val client: ClientInfo,
-           val activations: Activations,
-           request : Request[A]) extends WrappedRequest[A](request) with Toggling
+    Action andThen new TogglingRefiner(toguruClient)
 
   def userAgent(implicit requestHeader: RequestHeader) = requestHeader.headers.get(HeaderNames.USER_AGENT)
 

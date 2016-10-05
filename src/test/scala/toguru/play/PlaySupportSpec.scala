@@ -11,7 +11,7 @@ import play.api.test.{FakeHeaders, FakeRequest, Helpers}
 import org.scalatest.OptionValues._
 import toguru.api._
 import toguru.test.TestActivations
-import toguru.play.PlaySupport.{PlayClientProvider, PlayToguruClient, ToggledRequest}
+import toguru.play.PlaySupport._
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
