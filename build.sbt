@@ -23,6 +23,8 @@ libraryDependencies in ThisBuild ++= Seq(
   "org.scalactic" %% "scalactic" % "2.2.5",
   "org.scalaj" %% "scalaj-http" % "2.3.0",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
+  "io.dropwizard.metrics" % "metrics-core" % "3.1.0",
+  "org.komamitsu" % "phi-accural-failure-detector" % "0.0.3",
   "com.typesafe.play" %% "play-json" % playVersion,
   "com.typesafe.play" %% "play" % playVersion % "optional",
   "com.typesafe.play" %% "play-test" % playVersion % "optional",

@@ -30,7 +30,7 @@ object RemoteActivationsProvider {
     * Create an activation provider that fetches the toggle activations conditions from the toguru server given.
     *
     * @param endpointUrl the endpoint of the toguru server, e.g. <code>http://localhost:9000</code>
-    * @param pollInterval
+    * @param pollInterval the poll interval to use for querying the toguru server
     * @return
     */
   def apply(endpointUrl: String, pollInterval: Duration = 2.seconds): RemoteActivationsProvider = {
@@ -41,21 +41,23 @@ object RemoteActivationsProvider {
 
     new RemoteActivationsProvider(poller, executor, pollInterval)
   }
-
 }
 
 /**
   * Fetches the toggle activation conditions from a toguru server.
   *
-  * @param poller
-  * @param executor
-  * @param pollInterval
+  * @param poller the poller to fetch toggle states
+  * @param executor the executor service for scheduling polling
+  * @param pollInterval the polling interval
   */
-class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecutorService, pollInterval: Duration = 2.seconds) extends (() => Activations) with StrictLogging {
+class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecutorService, val pollInterval: Duration = 2.seconds) extends Activations.Provider
+  with ServerConnectivityMetrics with StrictLogging {
 
   val schedule = executor.scheduleAtFixedRate(new Runnable() {
     def run(): Unit = update()
   }, pollInterval.toMillis, pollInterval.toMillis, TimeUnit.MILLISECONDS)
+
+  sys.addShutdownHook { close() }
 
   val currentActivation = new AtomicReference[Activations](DefaultActivations)
 
@@ -63,6 +65,7 @@ class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecuto
 
   def close(): RemoteActivationsProvider = {
     schedule.cancel(true)
+    deregister()
     this
   }
 
@@ -74,14 +77,17 @@ class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecuto
         val tryToggleStates = Try(Json.parse(body).as[Seq[ToggleState]])
         (code, tryToggleStates) match {
           case (200, Success(toggleStates)) =>
+            fetchSuccess()
             Some(toggleStates)
 
           case _ =>
             logger.warn(s"Polling registry failed, got response code $code and body '$body'")
+            fetchFailed()
             None
         }
       case Failure(e) =>
         logger.warn(s"Polling registry failed", e)
+        connectError()
         None
     }
   }

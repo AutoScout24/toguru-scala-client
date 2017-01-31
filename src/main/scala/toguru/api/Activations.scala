@@ -5,7 +5,11 @@ import toguru.impl.RemoteActivationsProvider
 
 object Activations {
 
-  type Provider = () => Activations
+  trait Provider {
+    def apply(): Activations
+
+    def healthy(): Boolean
+  }
 
   /**
     * Creates an activation provider that polls the given endpoint url to retrieve a toggle state json.

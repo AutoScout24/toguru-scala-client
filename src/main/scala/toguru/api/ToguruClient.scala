@@ -19,4 +19,11 @@ class ToguruClient[T](val clientProvider: ClientInfo.Provider[T], val activation
     */
   def apply(input: T): Toggling = TogglingInfo(clientProvider(input), activationsProvider())
 
+  /**
+    * Check whether the toguru system is healthy
+    *
+    * @return
+    */
+  def healthy(): Boolean = activationsProvider.healthy()
+
 }
