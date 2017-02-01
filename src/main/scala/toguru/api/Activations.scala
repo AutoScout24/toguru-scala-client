@@ -28,6 +28,8 @@ trait Activations {
 
   def togglesFor(service: String): Map[ToggleId, Condition]
 
+  def stateSequenceNo: Option[Long]
+
 }
 
 object DefaultActivations extends Activations {
@@ -36,4 +38,5 @@ object DefaultActivations extends Activations {
 
   override def togglesFor(service: String) = Map.empty
 
+  override def stateSequenceNo: Option[Long] = None
 }

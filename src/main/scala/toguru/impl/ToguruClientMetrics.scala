@@ -5,13 +5,16 @@ import org.komamitsu.failuredetector.PhiAccuralFailureDetector
 
 import scala.concurrent.duration.Duration
 
-trait ServerConnectivityMetrics {
+trait ToguruClientMetrics {
 
   def pollInterval: Duration
+
+  def currentSequenceNo: Option[Long]
 
   val RegistryDomain = "toguru-client"
 
   val ConnectivityPhiGauge = "connectivity-phi-gauge"
+  val SequenceNoGauge      = "sequence-no-gauge"
   val ConnectErrorCount    = "connect-error-count"
   val FetchFailureCount    = "fetch-failure-count"
 
@@ -37,6 +40,8 @@ trait ServerConnectivityMetrics {
   connectivity.heartbeat()
 
   metricsRegistry.register(ConnectivityPhiGauge, new Gauge[Double] { def getValue = connectivity.phi() })
+
+  metricsRegistry.register(SequenceNoGauge, new Gauge[Long] { def getValue: Long = currentSequenceNo.getOrElse(0) })
 
   val connectErrors = metricsRegistry.counter(ConnectErrorCount)
 

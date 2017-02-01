@@ -8,10 +8,11 @@ class ToggleStateActivationsSpec extends WordSpec with ShouldMatchers with Mocki
 
   val toggle1 = Toggle("toggle-1")
 
-  val activations = new ToggleStateActivations(List(
+  val toggles = List(
     ToggleState(toggle1.id, Map("services" -> "toguru"), Some(30)),
-    ToggleState("toggle-2", Map.empty, Some(100))
-  ))
+    ToggleState("toggle-2", Map.empty, Some(100)))
+
+  val activations = new ToggleStateActivations(ToggleStates(Some(10), toggles))
 
   "ToggleStateActivations" should {
     "return activations from toggle state" in {

@@ -18,5 +18,7 @@ object TestActivations {
     override def apply(toggle: Toggle) = activations.collectFirst { case (`toggle`, c) => c }.getOrElse(toggle.default)
 
     override def togglesFor(service: String) = services.collect { case (t, `service`) => t.id -> apply(t) }.toMap
+
+    override def stateSequenceNo: Option[Long] = None
   }
 }

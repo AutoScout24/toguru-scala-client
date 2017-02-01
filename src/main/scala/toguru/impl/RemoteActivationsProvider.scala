@@ -5,7 +5,9 @@ import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 
 import com.hootsuite.circuitbreaker.CircuitBreakerBuilder
 import com.typesafe.scalalogging.StrictLogging
-import play.api.libs.json.Json
+import play.api.libs.functional.syntax._
+import play.api.libs.json.Reads._
+import play.api.libs.json._
 import toguru.api.{Activations, Condition, DefaultActivations, Toggle}
 import toguru.impl.RemoteActivationsProvider._
 
@@ -15,7 +17,15 @@ import scalaj.http.Http
 
 object RemoteActivationsProvider {
 
-  type TogglePoller = () => (Int, String)
+  val MimeApiV2 = "application/vnd.toguru.v2+json"
+
+  type TogglePoller = (Option[Long]) => (Int, String)
+
+  implicit val toggleStatesReads: Reads[ToggleStates] = {
+    implicit val toggleStateReads = Json.reads[ToggleState]
+    val toggleStatesV1Reads = Reads.seq[ToggleState].map(ts => ToggleStates(None, ts))
+    Json.reads[ToggleStates] or toggleStatesV1Reads
+  }
 
   val executor = Executors.newScheduledThreadPool(1)
   sys.addShutdownHook(executor.shutdownNow())
@@ -34,8 +44,9 @@ object RemoteActivationsProvider {
     * @return
     */
   def apply(endpointUrl: String, pollInterval: Duration = 2.seconds): RemoteActivationsProvider = {
-    val poller: TogglePoller = () => {
-      val response = Http(endpointUrl + "/togglestate").timeout(500, 750).asString
+    val poller: TogglePoller = { maybeSeqNo =>
+      val maybeSeqNoParam = maybeSeqNo.map(seqNo => s"?seqNo=$seqNo").mkString
+      val response = Http(endpointUrl + s"/togglestate$maybeSeqNoParam").header("Accept", MimeApiV2).timeout(500, 750).asString
       (response.code, response.body)
     }
 
@@ -51,7 +62,7 @@ object RemoteActivationsProvider {
   * @param pollInterval the polling interval
   */
 class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecutorService, val pollInterval: Duration = 2.seconds) extends Activations.Provider
-  with ServerConnectivityMetrics with StrictLogging {
+  with ToguruClientMetrics with StrictLogging {
 
   val schedule = executor.scheduleAtFixedRate(new Runnable() {
     def run(): Unit = update()
@@ -61,7 +72,10 @@ class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecuto
 
   val currentActivation = new AtomicReference[Activations](DefaultActivations)
 
-  def update() = fetchToggleStates().foreach(ts => currentActivation.set(new ToggleStateActivations(ts)))
+  def update() = {
+    val sequenceNo = currentActivation.get().stateSequenceNo
+    fetchToggleStates(sequenceNo).foreach(ts => currentActivation.set(new ToggleStateActivations(ts)))
+  }
 
   def close(): RemoteActivationsProvider = {
     schedule.cancel(true)
@@ -69,16 +83,27 @@ class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecuto
     this
   }
 
-  implicit val toggleReads = Json.reads[ToggleState]
 
-  def fetchToggleStates(): Option[Seq[ToggleState]] = {
-    Try(circuitBreaker() { poller() }) match {
+  def fetchToggleStates(sequenceNo: Option[Long]): Option[ToggleStates] = {
+
+    def sequenceNoValid(toggleStates: ToggleStates) = (sequenceNo, toggleStates.sequenceNo) match {
+      case (None, _) => true
+      case (Some(a), Some(b)) => a <= b
+      case (Some(_), None) => false
+    }
+
+    Try(circuitBreaker() { poller(sequenceNo) }) match {
       case Success((code, body)) =>
-        val tryToggleStates = Try(Json.parse(body).as[Seq[ToggleState]])
+        val tryToggleStates = Try(Json.parse(body).as[ToggleStates])
         (code, tryToggleStates) match {
-          case (200, Success(toggleStates)) =>
+          case (200, Success(toggleStates)) if sequenceNoValid(toggleStates) =>
             fetchSuccess()
             Some(toggleStates)
+
+          case (200, Success(toggleStates)) =>
+            logger.warn(s"Server response contains stale state (sequenceNo. is '${toggleStates.sequenceNo.mkString}'), client sequenceNo is '${sequenceNo.mkString}'.")
+            fetchFailed()
+            None
 
           case _ =>
             logger.warn(s"Polling registry failed, got response code $code and body '$body'")
@@ -94,9 +119,10 @@ class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecuto
 
   override def apply() = currentActivation.get()
 
+  override def currentSequenceNo: Option[Long] = apply().stateSequenceNo
 }
 
-class ToggleStateActivations(toggleStates: Seq[ToggleState]) extends Activations {
+class ToggleStateActivations(toggleStates: ToggleStates) extends Activations {
 
   def activationConditions(toggleState: ToggleState): (String, Condition) = {
     val condition = toggleState.rolloutPercentage match {
@@ -107,19 +133,23 @@ class ToggleStateActivations(toggleStates: Seq[ToggleState]) extends Activations
     toggleState.id -> condition
   }
 
-  val conditions = toggleStates.map(activationConditions).toMap
+  val conditions = toggleStates.toggles.map(activationConditions).toMap
 
   override def apply(toggle: Toggle) = conditions.getOrElse(toggle.id, toggle.default)
 
   override def togglesFor(service: String) = {
     val toggles =
       for {
-        toggle <- toggleStates if toggle.tags.get("services").contains(service)
+        toggle <- toggleStates.toggles if toggle.tags.get("services").contains(service)
         id = toggle.id
       } yield (id, conditions(id))
     toggles.toMap
   }
+
+  override def stateSequenceNo: Option[Long] = toggleStates.sequenceNo
 }
 
 
 case class ToggleState(id: String, tags: Map[String, String], rolloutPercentage: Option[Int])
+
+case class ToggleStates(sequenceNo: Option[Long], toggles: Seq[ToggleState])
