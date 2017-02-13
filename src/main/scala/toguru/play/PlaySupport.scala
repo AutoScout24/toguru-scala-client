@@ -1,16 +1,13 @@
 package toguru.play
 
-import java.util.{Locale, UUID}
+import java.util.UUID
 
-import play.api.http.HeaderNames
-import play.api.i18n.Lang
 import play.api.mvc._
 import toguru.impl.TogglesString._
 import toguru.api.Toggle.ToggleId
 import toguru.api._
 
 import scala.language.implicitConversions
-import scala.concurrent.Future
 import scala.util.Try
 
 /**
@@ -92,15 +89,14 @@ object PlaySupport {
   def ToggledAction(toguruClient: PlayToguruClient): ActionBuilder[ToggledRequest] =
     Action andThen new TogglingRefiner(toguruClient)
 
-  def userAgent(implicit requestHeader: RequestHeader) = requestHeader.headers.get(HeaderNames.USER_AGENT)
-
-  def localeFromCookieValue(cookieName: String)(implicit requestHeader: RequestHeader): Option[Locale] = for {
-    cultureCookie <- requestHeader.cookies.get(cookieName)
-    lang <- Lang.get(cultureCookie.value)
-  } yield lang.toLocale
-
   def uuidFromCookieValue(cookieName: String)(implicit requestHeader: RequestHeader): Option[UUID] =
     requestHeader.cookies.get(cookieName).flatMap(c => Try(UUID.fromString(c.value)).toOption)
+
+  def fromCookie(name: String)(implicit requestHeader: RequestHeader): Option[(String, String)] =
+    requestHeader.cookies.get(name).map(name -> _.value)
+
+  def fromHeader(name: String)(implicit requestHeader: RequestHeader): Option[(String, String)] =
+    requestHeader.headers.get(name).map(name -> _)
 
   def forcedToggle(toggleId: ToggleId)(implicit requestHeader: RequestHeader): Option[Boolean] = {
 

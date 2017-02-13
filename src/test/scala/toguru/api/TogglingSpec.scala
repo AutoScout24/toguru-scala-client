@@ -42,7 +42,7 @@ class TogglingSpec extends FeatureSpec with ShouldMatchers {
     scenario("produces 'on' when toggle state is 'off' but the client overrides it to be 'on'") {
       val toggle = Toggle("feature1")
       val activations = TestActivations(toggle -> Condition.Off)(toggle -> "service1")()
-      val clientInfo = ClientInfo(None, None, None, forceToggleTo("feature1", enabled = true))
+      val clientInfo = ClientInfo(None, forceToggleTo("feature1", enabled = true))
       val toggleInfo = TogglingInfo(clientInfo, activations)
 
       toggleInfo.toggleStringForService("service1") should be("feature1=true")
@@ -51,7 +51,7 @@ class TogglingSpec extends FeatureSpec with ShouldMatchers {
     scenario("produces 'off' when toggle state is 'on' but the client overrides it to be 'off'") {
       val toggle = Toggle("feature1")
       val activations = TestActivations(toggle -> Condition.On)(toggle -> "service1")()
-      implicit val clientInfo: ClientInfo = ClientInfo(None, None, None, forceToggleTo("feature1", enabled = false))
+      implicit val clientInfo: ClientInfo = ClientInfo(None, forceToggleTo("feature1", enabled = false))
       val toggleInfo = TogglingInfo(clientInfo, activations)
 
       toggleInfo.toggleStringForService("service1") should be("feature1=false")

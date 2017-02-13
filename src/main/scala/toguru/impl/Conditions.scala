@@ -1,11 +1,9 @@
 package toguru.impl
 
 import java.math.BigInteger
-import java.util.{Locale, UUID}
+import java.util.UUID
 
-import toguru.impl.LocaleSupport._
 import toguru.api.{ClientInfo, Condition}
-import toguru.api.ClientInfo.UserAgent
 
 case object AlwaysOnCondition extends Condition {
   override def applies(clientInfo: ClientInfo): Boolean = true
@@ -15,23 +13,12 @@ case object AlwaysOffCondition extends Condition {
   override def applies(clientInfo: ClientInfo): Boolean = false
 }
 
-/**
- * @param userAgentFragments one (only one, not all!) of this fragments should be contained in the user agent header to make this condition apply.
- */
-case class UserAgentCondition(userAgentFragments: Set[UserAgent]) extends Condition {
-  override def applies(clientInfo: ClientInfo): Boolean = clientInfo.userAgent.exists(ua => userAgentFragments.exists(uaFrag => ua.contains(uaFrag)))
+case class All(conditions: Set[Condition]) extends Condition {
+  override def applies(clientInfo: ClientInfo) = conditions.forall(_.applies(clientInfo))
 }
 
-case class CultureCondition(cultures: Set[Locale]) extends Condition {
-  override def applies(clientInfo: ClientInfo): Boolean = {
-    cultures.exists {
-      activatingLocale => activatingLocale.lang match {
-        case None =>
-          clientInfo.culture.exists(clientLocale => activatingLocale.country == clientLocale.country)
-        case _ => clientInfo.culture.contains(activatingLocale)
-      }
-    }
-  }
+case class Attribute(name: String, values: Seq[String]) extends Condition {
+  override def applies(clientInfo: ClientInfo) = clientInfo.attributes.get(name).exists(values.contains)
 }
 
 /**

@@ -37,7 +37,7 @@ import toguru.play._
 import toguru.play.PlaySupport._
 
 val client: PlayClientProvider = { implicit request =>
-  ClientInfo(userAgent, localeFromCookieValue("culture"), uuidFromCookieValue("myVisitor"), forcedToggle)
+  ClientInfo(uuidFromCookieValue("myVisitor"), forcedToggle).withAttribute(fromCookie("culture"))
 }
 
 val toguruClient = PlaySupport.toguruClient(client, "http://localhost:9000")
@@ -142,6 +142,6 @@ full usage examples in Scala Play.
 
 ## Copyright
 
-Copyright (C) 2016 AutoScout24 GmbH.
+Copyright (C) 2017 AutoScout24 GmbH.
 
 Distributed under the MIT License.

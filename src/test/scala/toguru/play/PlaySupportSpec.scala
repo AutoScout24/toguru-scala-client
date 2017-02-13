@@ -1,6 +1,6 @@
 package toguru.play
 
-import java.util.{Locale, UUID}
+import java.util.UUID
 import javax.inject.Inject
 
 import akka.util.Timeout
@@ -17,11 +17,13 @@ import scala.language.implicitConversions
 
 class PlaySupportSpec extends WordSpec with ShouldMatchers {
 
+  val UserAgent = HeaderNames.USER_AGENT
+
   val toggle = Toggle("toggle-1")
 
   val client: PlayClientProvider = { implicit request =>
     import PlaySupport._
-    ClientInfo(userAgent, localeFromCookieValue("culture"), uuidFromCookieValue("myVisitor"), forcedToggle)
+    ClientInfo(uuidFromCookieValue("myVisitor"), forcedToggle).withAttribute(fromCookie("culture")).withAttribute(fromHeader(UserAgent))
   }
 
   // you will write such a class in your play app to automatically convert from Play's RequestHeader to ClientInfo
@@ -95,7 +97,7 @@ class PlaySupportSpec extends WordSpec with ShouldMatchers {
 
 
   val fakeHeaders = FakeHeaders(Seq(
-    HeaderNames.USER_AGENT -> "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
+    UserAgent -> "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
     "X-toguru" -> "feature1-Forced-By-Header=true|feature2-Forced-By-Header=true",
     HeaderNames.COOKIE ->
       Cookies.encodeCookieHeader(Seq(
@@ -112,17 +114,17 @@ class PlaySupportSpec extends WordSpec with ShouldMatchers {
 
   "Conversion of request header to ClientInfo" should {
 
-    "Extraction of locale from culture cookie" in {
+    "extract culture attribute" in {
       val clientInfo = client(request)
-      clientInfo.culture.value shouldBe Locale.GERMANY
+      clientInfo.attributes.get("culture").value shouldBe "de-DE"
     }
 
-    "Extraction of user agent from user agent header" in {
+    "extract of user agent from user agent header" in {
       val clientInfo = client(request)
-      clientInfo.userAgent.value shouldBe "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"
+      clientInfo.attributes.get(UserAgent).value shouldBe "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"
     }
 
-    "Extraction of uuid from GUID or visitor cookie" in {
+    "extract of uuid from GUID or visitor cookie" in {
       val clientInfo = client(request)
       clientInfo.uuid.value shouldBe UUID.fromString("a5f409eb-2fdd-4499-b65b-b22bd7e51aa2")
     }

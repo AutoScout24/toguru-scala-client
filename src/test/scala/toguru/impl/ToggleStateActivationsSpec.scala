@@ -6,11 +6,15 @@ import toguru.api.{Condition, Toggle}
 
 class ToggleStateActivationsSpec extends WordSpec with ShouldMatchers with MockitoSugar {
 
+  def rollout(r: Int) = Some(Rollout(r))
+
   val toggle1 = Toggle("toggle-1")
+  val toggle3 = Toggle("toggle-4")
 
   val toggles = List(
-    ToggleState(toggle1.id, Map("services" -> "toguru"), Some(30)),
-    ToggleState("toggle-2", Map.empty, Some(100)))
+    ToggleState(toggle1.id, Map("services" -> "toguru"), rollout(30)),
+    ToggleState("toggle-2", Map.empty, rollout(100)),
+    ToggleState("toggle-4", Map.empty, None, Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2"))))
 
   val activations = new ToggleStateActivations(ToggleStates(Some(10), toggles))
 
@@ -23,6 +27,12 @@ class ToggleStateActivationsSpec extends WordSpec with ShouldMatchers with Mocki
       val uuidCondition = condition.asInstanceOf[UuidDistributionCondition]
 
       uuidCondition.ranges shouldBe List(1 to 30)
+    }
+
+    "create attribute activations from toggle state" in {
+      val condition = activations.apply(toggle3)
+
+      condition shouldBe All(Set(Attribute("culture", Seq("DE", "de-DE")), Attribute("version", Seq("1", "2"))))
     }
 
     "return toggle conditions for services" in {
@@ -46,6 +56,5 @@ class ToggleStateActivationsSpec extends WordSpec with ShouldMatchers with Mocki
 
       activations.apply(toggle) shouldBe condition
     }
-
   }
 }

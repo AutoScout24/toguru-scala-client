@@ -3,36 +3,41 @@ package toguru.impl
 import java.util.{Locale, UUID}
 
 import org.scalatest.{ShouldMatchers, WordSpec}
+import org.w3c.css.sac.AttributeCondition
 import toguru.api.ClientInfo
 
 class ConditionsSpec extends WordSpec with ShouldMatchers {
 
-  "Browser conditions" should {
+  "Attribute conditions" should {
+    "apply correctly to de-DE culture" in {
+      val clientInfo = ClientInfo(attributes = Map("culture" -> "de-DE"))
 
-    "return true if browser matches" in {
-      val clientInfo = ClientInfo(Some("Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"))
-
-      UserAgentCondition(Set("Chrome")).applies(clientInfo) shouldBe true
+      Attribute("culture", Seq("de-DE")).applies(clientInfo) shouldBe true
     }
 
-    "return false if browser does not match" in {
-      val clientInfo = ClientInfo(Some("Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"))
+    "apply if one value matches" in {
+      val clientInfo = ClientInfo(attributes = Map("culture" -> "de-DE"))
 
-      UserAgentCondition(Set("MSIE")).applies(clientInfo) shouldBe false
+      Attribute("culture", Seq("de-DE", "de-AT")).applies(clientInfo) shouldBe true
     }
   }
 
-  "Locale/Culture conditions" should {
-    "apply correctly to de-DE locale" in {
-      val clientInfo = ClientInfo(culture = Some(Locale.GERMANY))
+  "All conditions" should {
+    val myAllCondition = All(Set(Attribute("one", Seq("one")), Attribute("two", Seq("two"))))
 
-      CultureCondition(Set(Locale.GERMANY)).applies(clientInfo) shouldBe true
+    "return true if no condition is given" in {
+      val clientInfo = ClientInfo()
+      All(Set.empty).applies(clientInfo) shouldBe true
     }
 
-    "apply to lang german germany locale de-DE from client" in {
-      val clientInfo = ClientInfo(culture = Some(Locale.GERMANY))
+    "Evaluate to true if all conditions are met" in {
+      val clientInfo = ClientInfo(attributes = Map("one" -> "one", "two" -> "two"))
+      myAllCondition.applies(clientInfo) shouldBe true
+    }
 
-      CultureCondition(Set(new Locale("", "DE"))).applies(clientInfo) shouldBe true
+    "Evaluate to false if one condition is unmet" in {
+      val clientInfo = ClientInfo(attributes = Map("one" -> "one"))
+      myAllCondition.applies(clientInfo) shouldBe false
     }
   }
 

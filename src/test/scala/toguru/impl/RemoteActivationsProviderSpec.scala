@@ -3,13 +3,13 @@ package toguru.impl
 import java.net.ServerSocket
 import java.util.concurrent.Executors
 
-import org.http4s.headers.Accept
+import org.http4s.headers._
 import org.http4s.server.blaze.BlazeBuilder
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.scalatest.{OptionValues, ShouldMatchers, WordSpec}
-import toguru.api.{Condition, DefaultActivations, Toggle}
-import toguru.impl.RemoteActivationsProvider.TogglePoller
+import toguru.api.{Activations, Condition, DefaultActivations, Toggle}
+import toguru.impl.RemoteActivationsProvider.{PollResponse, TogglePoller}
 
 import scala.concurrent.duration._
 
@@ -19,17 +19,35 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
   val toggleTwo = Toggle("toggle-two")
   val executor = Executors.newSingleThreadScheduledExecutor()
 
-  def poller(response: String): TogglePoller = _ => (200, response)
+  def poller(response: String, contentType: String = RemoteActivationsProvider.MimeApiV3): TogglePoller =
+    _ => PollResponse(200, contentType, response)
 
   def createProvider(poller: TogglePoller): RemoteActivationsProvider =
     new RemoteActivationsProvider(poller, executor).close()
 
-  def createProvider(response: String): RemoteActivationsProvider = createProvider(poller(response))
+  def createProvider(response: String, contentType: String = RemoteActivationsProvider.MimeApiV3): RemoteActivationsProvider =
+    createProvider(poller(response, contentType))
 
   "Fetching features from toggle endpoint" should {
+
+    def validateResponse(toggles: Seq[ToggleState], activations: Activations): Unit = {
+      val toggleStateOne = toggles.collectFirst { case t if t.id == toggleOne.id => t }.value
+      val toggleStateTwo = toggles.collectFirst { case t if t.id == toggleTwo.id => t }.value
+
+      toggleStateOne.id shouldBe "toggle-one"
+      toggleStateOne.tags shouldBe Map("services" -> "toguru")
+      toggleStateOne.rollout shouldBe None
+
+      toggleStateTwo.id shouldBe "toggle-two"
+      toggleStateTwo.tags shouldBe Map("team" -> "Shared Services")
+      toggleStateTwo.rollout.value.percentage shouldBe 20
+
+      activations.apply(toggleOne) shouldBe Condition.Off
+    }
+
     "send sequenceNo to server" in {
       val poller = mock[TogglePoller]
-      when(poller.apply(Some(10))).thenReturn((200, ""))
+      when(poller.apply(Some(10))).thenReturn(PollResponse(200, "", ""))
 
       val provider = createProvider(poller)
 
@@ -45,10 +63,10 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
           |  "sequenceNo": 10,
           |  "toggles": [
           |    { "id": "toggle-one", "tags": {"services": "toguru"}},
-          |    { "id": "toggle-two", "tags": {"team": "Shared Services"}, "rolloutPercentage": 20}
+          |    { "id": "toggle-two", "tags": {"team": "Shared Services"}, "rollout": { "percentage": 20 } }
           |  ]
           |}
-        """.stripMargin
+          |""".stripMargin
 
       val provider = createProvider(response)
 
@@ -56,18 +74,7 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
       provider.update()
       val activations = provider.apply()
 
-      val toggleStateOne = toggles.collectFirst { case t if t.id == toggleOne.id => t }.value
-      val toggleStateTwo = toggles.collectFirst { case t if t.id == toggleTwo.id => t }.value
-
-      toggleStateOne.id shouldBe "toggle-one"
-      toggleStateOne.tags shouldBe Map("services" -> "toguru")
-      toggleStateOne.rolloutPercentage shouldBe None
-
-      toggleStateTwo.id shouldBe "toggle-two"
-      toggleStateTwo.tags shouldBe Map("team" -> "Shared Services")
-      toggleStateTwo.rolloutPercentage shouldBe Some(20)
-
-      activations.apply(toggleOne) shouldBe Condition.Off
+      validateResponse(toggles, activations)
     }
 
     "keeps latest sequence number in activation conditions" in {
@@ -113,7 +120,28 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
       maybeToggleStates shouldBe None
     }
 
-    "succeed if a downgraded toggle response is received" in {
+    "succeed if a V2 toggle response is received" in {
+      val response =
+        """
+          |{
+          |  "sequenceNo": 10,
+          |  "toggles": [
+          |    { "id": "toggle-one", "tags": {"services": "toguru"}},
+          |    { "id": "toggle-two", "tags": {"team": "Shared Services"}, "rolloutPercentage": 20}
+          |  ]
+          |}
+        """.stripMargin
+
+      val provider = createProvider(response, "")
+
+      val toggles = provider.fetchToggleStates(None).value.toggles
+      provider.update()
+      val activations = provider.apply()
+
+      validateResponse(toggles, activations)
+    }
+
+    "succeed if a V1 toggle response is received" in {
       val response =
         """
           |[
@@ -122,28 +150,17 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
           |]
         """.stripMargin
 
-      val provider = createProvider(response)
+      val provider = createProvider(response, "")
 
       val toggles = provider.fetchToggleStates(None).value.toggles
       provider.update()
       val activations = provider.apply()
 
-      val toggleStateOne = toggles.collectFirst { case t if t.id == toggleOne.id => t }.value
-      val toggleStateTwo = toggles.collectFirst { case t if t.id == toggleTwo.id => t }.value
-
-      toggleStateOne.id shouldBe "toggle-one"
-      toggleStateOne.tags shouldBe Map("services" -> "toguru")
-      toggleStateOne.rolloutPercentage shouldBe None
-
-      toggleStateTwo.id shouldBe "toggle-two"
-      toggleStateTwo.tags shouldBe Map("team" -> "Shared Services")
-      toggleStateTwo.rolloutPercentage shouldBe Some(20)
-
-      activations.apply(toggleOne) shouldBe Condition.Off
+      validateResponse(toggles, activations)
     }
 
     "fail if toggle endpoint returns 500" in {
-      val poller: TogglePoller = _ => (500, "")
+      val poller: TogglePoller = _ => PollResponse(500, "", "")
       val provider = createProvider(poller)
 
       provider.fetchToggleStates(None) shouldBe None
@@ -231,17 +248,19 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
       provider.close()
       server.shutdownNow()
 
-      acceptHeader shouldBe Some(RemoteActivationsProvider.MimeApiV2)
+      acceptHeader shouldBe Some(RemoteActivationsProvider.MimeApiV3)
     }
 
     "poll remote url with sequenceNo" in {
+      val contentTypeV3 = `Content-Type`.parse(RemoteActivationsProvider.MimeApiV3).toOption.get
+
       val response =
         Ok(
           """
             |{
             |  "sequenceNo": 10,
-            |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"rolloutPercentage":20}]
-            |}""".stripMargin)
+            |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"rollout":{"percentage":20}}]
+            |}""".stripMargin).withContentType(Some(contentTypeV3))
 
       var maybeSeqNo: Option[Long] = None
 

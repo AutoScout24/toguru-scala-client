@@ -37,7 +37,7 @@ class ToguruClientSpec extends FeatureSpec with ShouldMatchers with MockitoSugar
   feature("client info provider") {
     scenario("client info requested") {
       val myActivations = mock[Activations]
-      val myInfo = ClientInfo(userAgent = Some("me"))
+      val myInfo: ClientInfo = ClientInfo().withAttribute("user", "me")
       val client = toguruClient(
         clientProvider = _ => myInfo,
         activations = activationProvider(health = true, activations = myActivations))

@@ -17,14 +17,40 @@ import scalaj.http.Http
 
 object RemoteActivationsProvider {
 
-  val MimeApiV2 = "application/vnd.toguru.v2+json"
+  val MimeApiV3 = "application/vnd.toguru.v3+json"
 
-  type TogglePoller = (Option[Long]) => (Int, String)
+  case class PollResponse(code: Int, contentType: String, content: String)
 
-  implicit val toggleStatesReads: Reads[ToggleStates] = {
-    implicit val toggleStateReads = Json.reads[ToggleState]
-    val toggleStatesV1Reads = Reads.seq[ToggleState].map(ts => ToggleStates(None, ts))
-    Json.reads[ToggleStates] or toggleStatesV1Reads
+  type TogglePoller = (Option[Long]) => PollResponse
+
+  val toggleStateReadsUntilV2: Reads[ToggleStates] = {
+    val toggleStateV1Reads = (
+      (JsPath \ "id").read[String] and
+      (JsPath \ "rolloutPercentage").readNullable[Int] and
+      (JsPath \ "tags").read[Map[String, String]]
+    )((id, p, tags) => ToggleState(id, tags, p.map(Rollout)))
+
+    val toggleStatesV1Reads = Reads.seq(toggleStateV1Reads).map(ts => ToggleStates(None, ts))
+
+    val toggleStatesV2Reads = (
+        (JsPath \ "sequenceNo").read[Int] and
+        (JsPath \ "toggles").read(Reads.list(toggleStateV1Reads))
+      )((seqNo, toggles) => ToggleStates(Some(seqNo), toggles))
+
+    toggleStatesV2Reads or toggleStatesV1Reads
+  }
+
+  val toggleStateReads = {
+    implicit val rolloutReads = Json.reads[Rollout]
+
+    implicit val toggleStateReads = (
+        (JsPath \ "id").read[String] and
+        (JsPath \ "rollout").readNullable[Rollout] and
+        (JsPath \ "attributes").readNullable[Map[String,Seq[String]]] and
+        (JsPath \ "tags").read[Map[String, String]]
+      )((id, r, atts, tags) => ToggleState(id, tags, r, atts.getOrElse(Map.empty)))
+
+    Json.reads[ToggleStates]
   }
 
   val executor = Executors.newScheduledThreadPool(1)
@@ -46,8 +72,8 @@ object RemoteActivationsProvider {
   def apply(endpointUrl: String, pollInterval: Duration = 2.seconds): RemoteActivationsProvider = {
     val poller: TogglePoller = { maybeSeqNo =>
       val maybeSeqNoParam = maybeSeqNo.map(seqNo => s"?seqNo=$seqNo").mkString
-      val response = Http(endpointUrl + s"/togglestate$maybeSeqNoParam").header("Accept", MimeApiV2).timeout(500, 750).asString
-      (response.code, response.body)
+      val response = Http(endpointUrl + s"/togglestate$maybeSeqNoParam").header("Accept", MimeApiV3).timeout(500, 750).asString
+      PollResponse(response.code, response.contentType.getOrElse(""), response.body)
     }
 
     new RemoteActivationsProvider(poller, executor, pollInterval)
@@ -92,9 +118,18 @@ class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecuto
       case (Some(_), None) => false
     }
 
+    def parseBody(response: PollResponse): Try[ToggleStates] = {
+      val reads = response.contentType match {
+        case MimeApiV3 => toggleStateReads
+        case _         => toggleStateReadsUntilV2
+      }
+
+      Try(Json.parse(response.content).as(reads))
+    }
+
     Try(circuitBreaker() { poller(sequenceNo) }) match {
-      case Success((code, body)) =>
-        val tryToggleStates = Try(Json.parse(body).as[ToggleStates])
+      case Success(r @ PollResponse(code, _, body)) =>
+        val tryToggleStates = parseBody(r)
         (code, tryToggleStates) match {
           case (200, Success(toggleStates)) if sequenceNoValid(toggleStates) =>
             fetchSuccess()
@@ -121,35 +156,3 @@ class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecuto
 
   override def currentSequenceNo: Option[Long] = apply().stateSequenceNo
 }
-
-class ToggleStateActivations(toggleStates: ToggleStates) extends Activations {
-
-  def activationConditions(toggleState: ToggleState): (String, Condition) = {
-    val condition = toggleState.rolloutPercentage match {
-      case Some(p) => Condition.UuidRange(1 to p)
-      case None    => Condition.Off
-    }
-
-    toggleState.id -> condition
-  }
-
-  val conditions = toggleStates.toggles.map(activationConditions).toMap
-
-  override def apply(toggle: Toggle) = conditions.getOrElse(toggle.id, toggle.default)
-
-  override def togglesFor(service: String) = {
-    val toggles =
-      for {
-        toggle <- toggleStates.toggles if toggle.tags.get("services").contains(service)
-        id = toggle.id
-      } yield (id, conditions(id))
-    toggles.toMap
-  }
-
-  override def stateSequenceNo: Option[Long] = toggleStates.sequenceNo
-}
-
-
-case class ToggleState(id: String, tags: Map[String, String], rolloutPercentage: Option[Int])
-
-case class ToggleStates(sequenceNo: Option[Long], toggles: Seq[ToggleState])
