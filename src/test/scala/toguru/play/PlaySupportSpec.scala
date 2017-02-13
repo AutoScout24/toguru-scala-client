@@ -10,6 +10,7 @@ import play.api.mvc._
 import play.api.test.{FakeHeaders, FakeRequest, Helpers}
 import org.scalatest.OptionValues._
 import toguru.api._
+import toguru.impl.RemoteActivationsProvider
 import toguru.test.TestActivations
 
 import scala.concurrent.duration._
@@ -65,6 +66,15 @@ class PlaySupportSpec extends WordSpec with ShouldMatchers {
 
 
     new ToggledController(toguruClient) { }
+  }
+
+  "toguruClient method" should {
+    "create a PlayToguruClient" in {
+      val client = PlaySupport.toguruClient(_ => ClientInfo(), "http://localhost:9001")
+      client shouldBe a[PlayToguruClient]
+
+      client.activationsProvider.asInstanceOf[RemoteActivationsProvider].close()
+    }
   }
 
   "ToggledAction helper" should {
@@ -131,33 +141,33 @@ class PlaySupportSpec extends WordSpec with ShouldMatchers {
   }
 
   "Forcing feature toggles" should {
-    "Forcing feature toggles by http header" in {
+    "override feature toggles by http header" in {
       client(request).forcedToggle("feature1-Forced-By-HEADER").value shouldBe true
       client(request).forcedToggle("feature2-Forced-By-Header").value shouldBe true
     }
 
-    "Forcing feature toggles by cookie" in {
+    "override feature toggles by cookie" in {
       client(request).forcedToggle("feature1-Forced-By-COOKIE").value shouldBe true
       client(request).forcedToggle("feature2-Forced-By-Cookie").value shouldBe true
     }
 
-    "Forcing one feature toggle by query param" in {
+    "override one feature toggle by query param" in {
       val clientInfo: ClientInfo = client(request)
       clientInfo.forcedToggle("feature-forced-by-query-param").value shouldBe true
     }
 
-    "Forcing one feature toggle by query param with unusual case" in {
+    "override one feature toggle by query param with unusual case" in {
       val clientInfo: ClientInfo = client(requestWithToggleIdUpppercased)
       clientInfo.forcedToggle("feature-forced-by-query-param").value shouldBe true
     }
 
-    "Forcing two feature toggles by query param" in {
+    "override two feature toggles by query param" in {
       val clientInfo: ClientInfo = client(requestWithTwoTogglesInQueryString)
       clientInfo.forcedToggle("feature1-forced-by-query-param").value shouldBe true
       clientInfo.forcedToggle("feature2-forced-by-query-param").value shouldBe false
     }
 
-    "Forcing one feature toggle twice by query param takes only first occurence" in {
+    "override one feature toggle twice by query param takes only first occurrence" in {
       val clientInfo: ClientInfo = client(requestWithTwoTogglesInQueryString)
       clientInfo.forcedToggle("feature1-forced-by-query-param").value shouldBe true
     }
