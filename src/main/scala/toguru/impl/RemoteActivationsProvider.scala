@@ -8,7 +8,7 @@ import com.typesafe.scalalogging.StrictLogging
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
-import toguru.api.{Activations, Condition, DefaultActivations, Toggle}
+import toguru.api.{Activations, DefaultActivations}
 import toguru.impl.RemoteActivationsProvider._
 
 import scala.concurrent.duration._
@@ -28,7 +28,7 @@ object RemoteActivationsProvider {
       (JsPath \ "id").read[String] and
       (JsPath \ "rolloutPercentage").readNullable[Int] and
       (JsPath \ "tags").read[Map[String, String]]
-    )((id, p, tags) => ToggleState(id, tags, p.map(Rollout)))
+    )((id, p, tags) => ToggleState(id, tags, Seq(ToggleActivation(p.map(Rollout)))))
 
     val toggleStatesV1Reads = Reads.seq(toggleStateV1Reads).map(ts => ToggleStates(None, ts))
 
@@ -42,13 +42,13 @@ object RemoteActivationsProvider {
 
   val toggleStateReads = {
     implicit val rolloutReads = Json.reads[Rollout]
+    implicit val activationReads = Json.reads[ToggleActivation]
 
     implicit val toggleStateReads = (
         (JsPath \ "id").read[String] and
-        (JsPath \ "rollout").readNullable[Rollout] and
-        (JsPath \ "attributes").readNullable[Map[String,Seq[String]]] and
+        (JsPath \ "activations").read[Seq[ToggleActivation]] and
         (JsPath \ "tags").read[Map[String, String]]
-      )((id, r, atts, tags) => ToggleState(id, tags, r, atts.getOrElse(Map.empty)))
+      )((id, acts, tags) => ToggleState(id, tags, acts))
 
     Json.reads[ToggleStates]
   }
@@ -108,7 +108,6 @@ class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecuto
     deregister()
     this
   }
-
 
   def fetchToggleStates(sequenceNo: Option[Long]): Option[ToggleStates] = {
 

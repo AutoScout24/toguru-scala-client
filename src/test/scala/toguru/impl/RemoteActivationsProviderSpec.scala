@@ -28,6 +28,8 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
   def createProvider(response: String, contentType: String = RemoteActivationsProvider.MimeApiV3): RemoteActivationsProvider =
     createProvider(poller(response, contentType))
 
+  def rollout(ts: ToggleState) = ts.activations.headOption.flatMap(_.rollout.map(_.percentage))
+
   "Fetching features from toggle endpoint" should {
 
     def validateResponse(toggles: Seq[ToggleState], activations: Activations): Unit = {
@@ -36,11 +38,11 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
 
       toggleStateOne.id shouldBe "toggle-one"
       toggleStateOne.tags shouldBe Map("services" -> "toguru")
-      toggleStateOne.rollout shouldBe None
+      rollout(toggleStateOne) shouldBe None
 
       toggleStateTwo.id shouldBe "toggle-two"
       toggleStateTwo.tags shouldBe Map("team" -> "Shared Services")
-      toggleStateTwo.rollout.value.percentage shouldBe 20
+      rollout(toggleStateTwo) shouldBe Some(20)
 
       activations.apply(toggleOne) shouldBe Condition.Off
     }
@@ -62,8 +64,8 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
           |{
           |  "sequenceNo": 10,
           |  "toggles": [
-          |    { "id": "toggle-one", "tags": {"services": "toguru"}},
-          |    { "id": "toggle-two", "tags": {"team": "Shared Services"}, "rollout": { "percentage": 20 } }
+          |    { "id": "toggle-one", "tags": {"services": "toguru"}, "activations": [] },
+          |    { "id": "toggle-two", "tags": {"team": "Shared Services"}, "activations": [ {"rollout": {"percentage": 20 }, "attributes": {} } ] }
           |  ]
           |}
           |""".stripMargin
@@ -259,7 +261,7 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
           """
             |{
             |  "sequenceNo": 10,
-            |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"rollout":{"percentage":20}}]
+            |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"activations":[{"rollout":{"percentage":20}, "attributes":{}}]}]
             |}""".stripMargin).withContentType(Some(contentTypeV3))
 
       var maybeSeqNo: Option[Long] = None

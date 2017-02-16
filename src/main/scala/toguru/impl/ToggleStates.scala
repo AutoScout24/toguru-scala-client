@@ -4,15 +4,24 @@ import toguru.api.{Activations, Condition, Toggle}
 
 case class ToggleStates(sequenceNo: Option[Long], toggles: Seq[ToggleState])
 
-case class ToggleState(id: String, tags: Map[String, String], rollout: Option[Rollout] = None, attributes: Map[String, Seq[String]] = Map.empty)
+case class ToggleState(id: String, tags: Map[String, String], activations: Seq[ToggleActivation])
+
+case class ToggleActivation(rollout: Option[Rollout] = None, attributes: Map[String, Seq[String]] = Map.empty)
 
 case class Rollout(percentage: Int)
 
 class ToggleStateActivations(toggleStates: ToggleStates) extends Activations {
 
   def activationConditions(toggleState: ToggleState): (String, Condition) = {
-    val rollout = toggleState.rollout.map(r => Condition.UuidRange(1 to r.percentage))
-    val attributes = toggleState.attributes.map { case (k, v) => Attribute(k, v) }
+    val rollout = for {
+      activation <- toggleState.activations.headOption
+      rollout <- activation.rollout
+    } yield Condition.UuidRange(1 to rollout.percentage)
+
+    val attributes = for {
+      activation <- toggleState.activations.headOption.to[Seq]
+      (k, v) <- activation.attributes
+    } yield Attribute(k, v)
 
     val condition = (attributes ++ rollout).to[List] match {
       case Nil    => Condition.Off
