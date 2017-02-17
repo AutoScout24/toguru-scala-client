@@ -27,8 +27,8 @@ To toggle code with this client, you need to perform the following steps.
 Create a Toguru client - e.g. in the Guice module of your Play
 application so that it can be injected wherever you need it. For this,
 you need to define
-* how toggling-relevant client information (e.g. client id and user agent)
-  can be extracted from a Play request, and
+* how toggling-relevant client information (e.g. client id and custom
+  attributes like culture) can be extracted from a Play request, and
 * the Toguru server where the toggle activation conditions can be fetched from.
 
 ```scala
@@ -37,10 +37,10 @@ import toguru.play._
 import toguru.play.PlaySupport._
 
 val client: PlayClientProvider = { implicit request =>
-  ClientInfo(uuidFromCookieValue("myVisitor"), forcedToggle).withAttribute(fromCookie("culture"))
+  ClientInfo(uuidFromCookieValue("myVisitor"), forcedToggle)
 }
 
-val toguruClient = PlaySupport.toguruClient(client, "http://localhost:9000")
+val toguru = PlaySupport.toguruClient(client, "http://localhost:9000")
 ```
 
 Define a toggle using a toggle id and a default activation condition, e.g.
@@ -53,18 +53,19 @@ in the server's toggle state response.
 val toggle = Toggle("my-toggle", default = Condition.Off)
 ```
 
-
 Now, you can determine the state of your toggle based on the client info
 and the toggle activation condition from the Toguru server:
 
 ```scala
-implicit val toggling = toguruClient(request)
+implicit val toggling = toguru(request)
 
 if(toggle.isOn)
   Ok("Toggle is on")
 else
   Ok("Toggle is off")
 ```
+
+## Play support
 
 The Toguru Scala client offers several convenience utilities, however.
 To begin with, you can create a toggled controller based on the Toguru
@@ -78,7 +79,6 @@ abstract class ToggledController(toguru: PlayToguruClient) extends Controller {
   val ToggledAction = PlaySupport.ToggledAction(toguru)
 }
 ```
-
 
 Now you can define your controller with toggled actions and use the
 toggle defined earlier to control which code gets executed:
@@ -94,6 +94,11 @@ class MyController @Inject()(toguru: PlayToguruClient) extends ToggledController
   }
 }
 ```
+
+the request gets enriched with toggling information that is passed into
+the toggle.isOn method.
+
+## Custom request enrichment
 
 If you need to enrich the request yourself or can't use PlaySupport's
 ToggledAction, you can either apply the `Toggling` trait to your request:
@@ -123,6 +128,27 @@ class MyControllerWithOwnTogglingInfo @Inject()(toguru: PlayToguruClient) extend
   }
 }
 ```
+
+## Custom client attributes
+
+`ClientInfo` provides means to enrich it with custom attributes. When Creating
+a `ClientInfo.Provider`, attributes can be added by using `withAttribute`.
+`PlaySupport` offers `fromCookie` and `fromHeader` methods that allow set
+custom attribute from a cookie value or a request header, respectively.
+Note that the custom attribute will not be set if the cookie or header is
+missing.
+
+For example, setting the custom attribute from a cookie named `culture` can be
+done like this:
+
+```
+val client: PlayClientProvider = { implicit request =>
+  ClientInfo(uuidFromCookieValue("myVisitor"), forcedToggle).withAttribute(fromCookie("culture"))
+}
+```
+
+By this, the activation of a toggle can be controlled based on the value of
+custom attributes.
 
 ## Testing toggled code
 
