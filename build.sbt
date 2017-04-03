@@ -9,6 +9,8 @@ licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
 bintrayOrganization := Some("autoscout24")
 
+crossScalaVersions in ThisBuild := Seq("2.12.1", "2.11.8")
+
 scalaVersion in ThisBuild := "2.11.8"
 
 scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature", "-Xfatal-warnings",
