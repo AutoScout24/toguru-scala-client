@@ -27,12 +27,17 @@ trait Toggling {
     *                the toguru server.
     * @return
     */
-  def toggleStringForService(service: String): String = {
-    val toggleStates = activations.togglesFor(service)
+  def toggleStringForService(service: String): String = toggleStringForFilter { (tags, condition) =>
+    tags.get("services").contains(service)
+  }
+
+  def toggleStringForFilter(filter: (Map[String, String], Condition) => Boolean): String = {
+    val toggleStates = activations.togglesForFilter(filter)
       .map { case (id, c) => id -> client.forcedToggle(id).getOrElse(c.applies(client))}
 
     TogglesString.build(toggleStates)
   }
+
 }
 
 /**
