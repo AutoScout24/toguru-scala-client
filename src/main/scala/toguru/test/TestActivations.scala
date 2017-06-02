@@ -32,3 +32,12 @@ object TestActivations {
     override def stateSequenceNo: Option[Long] = None
   }
 }
+
+object TestActivationsWithTags {
+
+  def apply(activations: (Toggle, Condition)*)(tags: (Toggle, Map[String, String])*) = new Activations.Provider() {
+    override def apply() = new TestActivations.Impl(activations: _*)(tags: _*)
+    override def healthy() = true
+  }
+
+}
