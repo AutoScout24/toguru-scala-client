@@ -1,7 +1,7 @@
 package toguru.api
 
 import toguru.api.Toggle.ToggleId
-import toguru.impl.RemoteActivationsProvider
+import toguru.impl.{RemoteActivationsProvider, ToggleState}
 
 object Activations {
 
@@ -30,6 +30,8 @@ trait Activations {
 
   def stateSequenceNo: Option[Long]
 
+  def apply(): Traversable[ToggleState]
+
 }
 
 object DefaultActivations extends Activations {
@@ -39,4 +41,6 @@ object DefaultActivations extends Activations {
   override def togglesFor(service: String) = Map.empty
 
   override def stateSequenceNo: Option[Long] = None
+
+  override def apply() = Seq.empty
 }

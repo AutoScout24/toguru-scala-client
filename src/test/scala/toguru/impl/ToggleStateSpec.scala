@@ -4,26 +4,23 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.{ShouldMatchers, WordSpec}
 import toguru.api.{Condition, Toggle}
 
-class ToggleStateActivationsSpec extends WordSpec with ShouldMatchers with MockitoSugar {
+class ToggleStateSpec extends WordSpec with ShouldMatchers with MockitoSugar {
 
   def activation(rollout: Option[Rollout] = None, attrs: Map[String, Seq[String]] = Map.empty) =
     Seq(ToggleActivation(rollout, attrs))
 
   def rollout(r: Int) = Some(Rollout(r))
 
-  val toggle1 = Toggle("toggle-1")
-  val toggle3 = Toggle("toggle-4")
-
   val toggles = List(
-    ToggleState(toggle1.id, Map("services" -> "toguru"), activation(rollout(30))),
-    ToggleState("toggle-2", Map.empty, activation(rollout(100))),
-    ToggleState("toggle-4", Map.empty, activation(attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))))
+    ToggleState("toggle1", Map("services" -> "toguru"), activation(rollout(30))),
+    ToggleState("toggle-2", Map.empty[String, String], activation(rollout(100))),
+    ToggleState("toggle-4", Map.empty[String, String], activation(attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))))
 
-  val activations = new ToggleStateActivations(ToggleStates(Some(10), toggles))
 
-  "ToggleStateActivations" should {
-    "return activations from toggle state" in {
-      val condition = activations.apply(toggle1)
+  "ToggleState.apply" should {
+
+    "transform activations into conditions" in {
+      val condition = toggles(0).condition
 
       condition shouldBe a[UuidDistributionCondition]
 
@@ -32,19 +29,25 @@ class ToggleStateActivationsSpec extends WordSpec with ShouldMatchers with Mocki
       uuidCondition.ranges shouldBe List(1 to 30)
     }
 
-    "create attribute activations from toggle state" in {
-      val condition = activations.apply(toggle3)
+    "transform activations attributes to conditions" in {
+      val condition = toggles(2).condition
 
       condition shouldBe All(Set(Attribute("culture", Seq("DE", "de-DE")), Attribute("version", Seq("1", "2"))))
     }
 
+  }
+
+  "ToggleState.activations" should {
+
+    val activations = new ToggleStateActivations(ToggleStates(Some(10), toggles))
+
     "return toggle conditions for services" in {
-      val toggles = activations.togglesFor("toguru")
+      val toguruToggles = activations.togglesFor("toguru")
 
-      toggles should have size 1
-      toggles.keySet shouldBe Set(toggle1.id)
+      toguruToggles should have size 1
+      toguruToggles.keySet shouldBe Set("toggle1")
 
-      val condition = toggles(toggle1.id)
+      val condition = toguruToggles("toggle1")
 
       condition shouldBe a[UuidDistributionCondition]
 
@@ -60,4 +63,5 @@ class ToggleStateActivationsSpec extends WordSpec with ShouldMatchers with Mocki
       activations.apply(toggle) shouldBe condition
     }
   }
+
 }

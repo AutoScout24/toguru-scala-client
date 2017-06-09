@@ -30,8 +30,6 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
   def createProvider(response: String, contentType: String = RemoteActivationsProvider.MimeApiV3): RemoteActivationsProvider =
     createProvider(poller(response, contentType))
 
-  def rollout(ts: ToggleState) = ts.activations.headOption.flatMap(_.rollout.map(_.percentage))
-
   "Fetching features from toggle endpoint" should {
 
     def validateResponse(toggles: Seq[ToggleState]): Unit = {
@@ -40,11 +38,11 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
 
       toggleStateOne.id shouldBe "toggle-one"
       toggleStateOne.tags shouldBe Map("services" -> "toguru")
-      rollout(toggleStateOne) shouldBe None
+      toggleStateOne.condition shouldBe Condition.Off
 
       toggleStateTwo.id shouldBe "toggle-two"
       toggleStateTwo.tags shouldBe Map("team" -> "Shared Services")
-      rollout(toggleStateTwo) shouldBe Some(20)
+      toggleStateTwo.condition shouldBe Condition.UuidRange(1 to 20)
     }
 
     "send sequenceNo to server" in {
