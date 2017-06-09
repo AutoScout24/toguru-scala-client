@@ -1,9 +1,8 @@
 package toguru.impl
 
-import java.util.{Locale, UUID}
+import java.util.UUID
 
 import org.scalatest.{ShouldMatchers, WordSpec}
-import org.w3c.css.sac.AttributeCondition
 import toguru.api.ClientInfo
 
 class ConditionsSpec extends WordSpec with ShouldMatchers {
@@ -52,6 +51,16 @@ class ConditionsSpec extends WordSpec with ShouldMatchers {
     "apply to false if uuid is projected outside the given range" in {
       val clientInfo = ClientInfo(uuid = Some(uuidWithDefaultProjectionToFive))
       UuidDistributionCondition(10 to 11).applies(clientInfo) shouldBe false
+    }
+
+    "apply to false if uuid is none and rollout is 100%" in {
+      val clientInfo = ClientInfo(uuid = None)
+      UuidDistributionCondition(1 to 100).applies(clientInfo) shouldBe false
+    }
+
+    "apply to false if uuid is none and rollout is 1%" in {
+      val clientInfo = ClientInfo(uuid = None)
+      UuidDistributionCondition(1 to 1).applies(clientInfo) shouldBe false
     }
 
     "throw an exception if the range is not between 1 and 100" in {
