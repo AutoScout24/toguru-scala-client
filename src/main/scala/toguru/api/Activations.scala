@@ -26,7 +26,11 @@ trait Activations {
 
   def apply(toggle: Toggle): Condition
 
-  def togglesFor(service: String): Map[ToggleId, Condition]
+  def togglesFor(service: String) = togglesForFilter { (tags, condition) =>
+    tags.get("services").contains(service)
+  }
+
+  def togglesForFilter(filter: (Map[String, String], Condition) => Boolean): Map[ToggleId, Condition]
 
   def stateSequenceNo: Option[Long]
 
@@ -36,7 +40,7 @@ object DefaultActivations extends Activations {
 
   override def apply(toggle: Toggle) = toggle.default
 
-  override def togglesFor(service: String) = Map.empty
+  override def togglesForFilter(filter: (Map[String, String], Condition) => Boolean) = Map.empty
 
   override def stateSequenceNo: Option[Long] = None
 }

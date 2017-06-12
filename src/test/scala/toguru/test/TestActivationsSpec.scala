@@ -29,7 +29,7 @@ class TestActivationsSpec extends WordSpec with ShouldMatchers {
     }
   }
 
-  "serviceFor" should {
+  "togglesFor" should {
     "return the toggles as given in the test" in {
       val toggle = Toggle("test-toggle")
       val anotherToggle = Toggle("another-toggle")
@@ -41,4 +41,27 @@ class TestActivationsSpec extends WordSpec with ShouldMatchers {
       toggles.get("test-toggle") shouldBe Some(Condition.On)
     }
   }
+
+  "togglesForFilter" should {
+    "return the toggles as given in the test" in {
+      val toggle = Toggle("test-toggle")
+      val anotherToggle = Toggle("another-toggle")
+      val thirdToggle = Toggle("third-toggle")
+      val activations = TestActivationsWithTags(toggle -> Condition.On, anotherToggle -> Condition.Off, thirdToggle -> Condition.On)(
+        toggle -> Map("tag1" -> "A", "tag2" -> "B"),
+        anotherToggle -> Map("tag1" -> "A", "tag2" -> "A"),
+        thirdToggle -> Map("tag1" -> "B", "tag2" -> "B"))
+
+      val toggles = activations().togglesForFilter { case (tags, condition) => tags.get("tag1").contains("A") && tags.get("tag2").contains("A") }
+
+      toggles.size shouldBe 1
+      toggles.get("another-toggle") shouldBe Some(Condition.Off)
+
+      val toggles2 = activations().togglesForFilter { case (tags, condition) => condition == Condition.Off }
+
+      toggles2.size shouldBe 1
+      toggles2.get("another-toggle") shouldBe Some(Condition.Off)
+    }
+  }
+
 }

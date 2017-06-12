@@ -36,10 +36,10 @@ class ToggleStateActivations(toggleStates: ToggleStates) extends Activations {
 
   override def apply(toggle: Toggle) = conditions.getOrElse(toggle.id, toggle.default)
 
-  override def togglesFor(service: String) = {
+  override def togglesForFilter(filter: (Map[String, String], Condition) => Boolean) = {
     val toggles =
       for {
-        toggle <- toggleStates.toggles if toggle.tags.get("services").contains(service)
+        toggle <- toggleStates.toggles if filter(toggle.tags, conditions(toggle.id))
         id = toggle.id
       } yield (id, conditions(id))
     toggles.toMap
