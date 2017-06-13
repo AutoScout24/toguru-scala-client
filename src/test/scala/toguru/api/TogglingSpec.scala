@@ -35,6 +35,16 @@ class TogglingSpec extends FeatureSpec with ShouldMatchers {
 
       toggle1.isOn shouldBe true
     }
+
+    scenario("toggle state falls back to false if client uuid is None") {
+      val toggle1 = Toggle("toggle-1", default = Condition.On)
+      val activation = new TestActivations.Impl(toggle1 -> Condition.UuidRange(1 to 100))()
+      val info = ClientInfo(uuid = None)
+
+      implicit val toggleInfo = TogglingInfo(info, activation)
+
+      toggle1.isOn shouldBe false
+    }
   }
 
   feature("Can build toggle strings") {

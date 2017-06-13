@@ -32,12 +32,14 @@ case class UuidDistributionCondition(ranges: Seq[Range], f: UUID => Int) extends
   ranges.foreach(r => if (r.head < 1 || r.last > 100) throw new IllegalArgumentException("Range should describe a range between 1 and 100 inclusive"))
 
   override def applies(clientInfo: ClientInfo): Boolean = {
-    // if no uuid is set use a random, but be aware that the feature is NOT stable for the client
-    val uuid = clientInfo.uuid.getOrElse(UUID.randomUUID())
-    val projected = f(uuid)
-    ranges.exists(range => {
-      range.contains(projected)
-    })
+    clientInfo.uuid match {
+      case Some(uuid) =>
+        val projected = f(uuid)
+        ranges.exists(range => {
+          range.contains(projected)
+        })
+      case None => false
+    }
   }
 }
 
