@@ -21,8 +21,7 @@ object ToggleState {
         (k, v) <- activation.attributes
       } yield Attribute(k, v)
 
-      (attributes ++ rollout).to[List] match {
-        case Nil    => Condition.Off
+      (attributes :+ rollout.getOrElse(Condition.Off)).to[List] match {
         case Seq(c) => c
         case cs     => All(cs.to[Set])
       }

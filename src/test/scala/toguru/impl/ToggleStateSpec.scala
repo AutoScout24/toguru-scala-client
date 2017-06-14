@@ -3,6 +3,7 @@ package toguru.impl
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{ShouldMatchers, WordSpec}
 import toguru.api.{Condition, Toggle}
+import toguru.implicits.toggle
 
 class ToggleStateSpec extends WordSpec with ShouldMatchers with MockitoSugar {
 
@@ -14,7 +15,8 @@ class ToggleStateSpec extends WordSpec with ShouldMatchers with MockitoSugar {
   val toggles = List(
     ToggleState("toggle1", Map("services" -> "toguru"), activation(rollout(30))),
     ToggleState("toggle-2", Map.empty[String, String], activation(rollout(100))),
-    ToggleState("toggle-4", Map.empty[String, String], activation(attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))))
+    ToggleState("toggle-4", Map.empty[String, String], activation(attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))),
+    ToggleState("toggle-5", Map.empty[String, String], activation(rollout(30), attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))))
 
 
   "ToggleState.apply" should {
@@ -29,12 +31,20 @@ class ToggleStateSpec extends WordSpec with ShouldMatchers with MockitoSugar {
       uuidCondition.ranges shouldBe List(1 to 30)
     }
 
-    "transform activations attributes to conditions" in {
+    "Adds AlwayOffCondition if only attribute contitions are given" in {
       val condition = toggles(2).condition
 
-      condition shouldBe All(Set(Attribute("culture", Seq("DE", "de-DE")), Attribute("version", Seq("1", "2"))))
+      condition shouldBe All(Set(AlwaysOffCondition, Attribute("culture", Seq("DE", "de-DE")), Attribute("version", Seq("1", "2"))))
     }
 
+    "transform combinations of rollout and attributes to conditions" in {
+      val condition = toggles(3).condition
+
+      condition shouldBe All(Set(
+        UuidDistributionCondition(List(1 to 30), UuidDistributionCondition.defaultUuidToIntProjection),
+        Attribute("culture", Seq("DE", "de-DE")),
+        Attribute("version", Seq("1", "2"))))
+    }
   }
 
   "ToggleState.activations" should {
@@ -61,6 +71,11 @@ class ToggleStateSpec extends WordSpec with ShouldMatchers with MockitoSugar {
       val toggle = Toggle("toggle-3", condition)
 
       activations.apply(toggle) shouldBe condition
+    }
+
+    "apply should return togglestates" in {
+
+      activations() shouldBe toggles
     }
   }
 
