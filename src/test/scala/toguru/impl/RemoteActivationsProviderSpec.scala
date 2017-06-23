@@ -1,8 +1,9 @@
 package toguru.impl
 
 import java.net.ServerSocket
-import java.util.concurrent.Executors
+import java.util.concurrent.{Executors, TimeUnit}
 
+import com.hootsuite.circuitbreaker.CircuitBreakerBuilder
 import org.http4s._
 import org.http4s.dsl._
 import org.http4s.headers._
@@ -13,7 +14,7 @@ import org.scalatest.{OptionValues, ShouldMatchers, WordSpec}
 import toguru.api.{Condition, DefaultActivations, Toggle}
 import toguru.impl.RemoteActivationsProvider.{PollResponse, TogglePoller}
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.{FiniteDuration, _}
 
 class RemoteActivationsProviderSpec extends WordSpec with OptionValues with ShouldMatchers with MockitoSugar {
 
@@ -24,8 +25,14 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
   def poller(response: String, contentType: String = RemoteActivationsProvider.MimeApiV3): TogglePoller =
     _ => PollResponse(200, contentType, response)
 
+  val circuitBreakerBuilder = CircuitBreakerBuilder(
+    name = "test-breaker",
+    failLimit  = 1000,
+    retryDelay = FiniteDuration(100, TimeUnit.MILLISECONDS)
+  )
+
   def createProvider(poller: TogglePoller): RemoteActivationsProvider =
-    new RemoteActivationsProvider(poller, executor).close()
+    new RemoteActivationsProvider(poller, executor, circuitBreakerBuilder = circuitBreakerBuilder).close()
 
   def createProvider(response: String, contentType: String = RemoteActivationsProvider.MimeApiV3): RemoteActivationsProvider =
     createProvider(poller(response, contentType))
@@ -189,8 +196,9 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Shou
 
   "Created activation provider" should {
     def createProviderAndServer(service: HttpService) = {
+
       val port = freePort
-      (RemoteActivationsProvider(s"http://localhost:$port", pollInterval = 100.milliseconds),
+      (RemoteActivationsProvider(s"http://localhost:$port", pollInterval = 100.milliseconds, circuitBreakerBuilder = circuitBreakerBuilder),
         BlazeBuilder.bindHttp(port, "localhost").mountService(service, "/togglestate").run)
     }
 

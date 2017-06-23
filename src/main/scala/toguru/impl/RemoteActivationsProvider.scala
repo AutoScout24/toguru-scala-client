@@ -56,11 +56,11 @@ object RemoteActivationsProvider {
   val executor = Executors.newScheduledThreadPool(1)
   sys.addShutdownHook(executor.shutdownNow())
 
-  private val circuitBreaker = CircuitBreakerBuilder(
+  private val circuitBreakerBuilder = CircuitBreakerBuilder(
     name = "toguru-server-breaker",
     failLimit  = 5,
     retryDelay = FiniteDuration(20, TimeUnit.SECONDS)
-  ).build()
+  )
 
   /**
     * Create an activation provider that fetches the toggle activations conditions from the toguru server given.
@@ -69,14 +69,14 @@ object RemoteActivationsProvider {
     * @param pollInterval the poll interval to use for querying the toguru server
     * @return
     */
-  def apply(endpointUrl: String, pollInterval: Duration = 2.seconds): RemoteActivationsProvider = {
+  def apply(endpointUrl: String, pollInterval: Duration = 2.seconds, circuitBreakerBuilder: CircuitBreakerBuilder = circuitBreakerBuilder): RemoteActivationsProvider = {
     val poller: TogglePoller = { maybeSeqNo =>
       val maybeSeqNoParam = maybeSeqNo.map(seqNo => s"?seqNo=$seqNo").mkString
       val response = Http(endpointUrl + s"/togglestate$maybeSeqNoParam").header("Accept", MimeApiV3).timeout(500, 750).asString
       PollResponse(response.code, response.contentType.getOrElse(""), response.body)
     }
 
-    new RemoteActivationsProvider(poller, executor, pollInterval)
+    new RemoteActivationsProvider(poller, executor, pollInterval, circuitBreakerBuilder)
   }
 }
 
@@ -86,9 +86,16 @@ object RemoteActivationsProvider {
   * @param poller the poller to fetch toggle states
   * @param executor the executor service for scheduling polling
   * @param pollInterval the polling interval
+  * @param circuitBreakerBuilder the circuit breaker builder to use for creating the circuit breaker.
   */
-class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecutorService, val pollInterval: Duration = 2.seconds) extends Activations.Provider
-  with ToguruClientMetrics with StrictLogging {
+class RemoteActivationsProvider(
+                                 poller: TogglePoller,
+                                 executor: ScheduledExecutorService,
+                                 val pollInterval: Duration = 2.seconds,
+                                 val circuitBreakerBuilder: CircuitBreakerBuilder = RemoteActivationsProvider.circuitBreakerBuilder)
+  extends Activations.Provider with ToguruClientMetrics with StrictLogging {
+
+  val circuitBreaker = circuitBreakerBuilder.build()
 
   val schedule = executor.scheduleAtFixedRate(new Runnable() {
     def run(): Unit = update()
@@ -145,7 +152,7 @@ class RemoteActivationsProvider(poller: TogglePoller, executor: ScheduledExecuto
             None
         }
       case Failure(e) =>
-        logger.warn(s"Polling registry failed", e)
+        logger.warn(s"Polling registry failed (${e.getClass.getName}: ${e.getMessage})")
         connectError()
         None
     }
