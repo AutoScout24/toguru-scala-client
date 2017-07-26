@@ -1,9 +1,9 @@
 package toguru.api
 
-import org.scalatest.{FeatureSpec, ShouldMatchers}
+import org.scalatest.{FeatureSpec, MustMatchers}
 import toguru.test.TestActivations
 
-class ToggleSpec extends FeatureSpec with ShouldMatchers {
+class ToggleSpec extends FeatureSpec with MustMatchers {
 
   val emptyToggleInfo = TogglingInfo(ClientInfo(), new TestActivations.Impl()())
 
@@ -12,16 +12,16 @@ class ToggleSpec extends FeatureSpec with ShouldMatchers {
       val toggle1 = Toggle("toggle-1")
       implicit val toggleInfo = emptyToggleInfo
 
-      toggle1.isOn shouldBe false
-      toggle1.isOff shouldBe true
+      toggle1.isOn mustBe false
+      toggle1.isOff mustBe true
     }
 
     scenario("default condition is respected") {
       val toggle1 = Toggle("toggle-1", default = Condition.On)
       implicit val toggleInfo = emptyToggleInfo
 
-      toggle1.isOn shouldBe true
-      toggle1.isOff shouldBe false
+      toggle1.isOn mustBe true
+      toggle1.isOff mustBe false
     }
   }
 }

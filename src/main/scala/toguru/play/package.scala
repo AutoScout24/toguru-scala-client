@@ -3,7 +3,7 @@ package toguru
 import _root_.play.api.mvc._
 import toguru.api.{Activations, ClientInfo, Toggling, ToguruClient}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 package object play {
 
@@ -24,14 +24,20 @@ package object play {
     *
     * @param toguruClient the toguru client to use.
     */
-  class TogglingRefiner(toguruClient: PlayToguruClient) extends ActionRefiner[Request, ToggledRequest] {
+  class TogglingRefiner(toguruClient: PlayToguruClient)(
+      implicit val executionContext: ExecutionContext)
+      extends ActionRefiner[Request, ToggledRequest] {
     def refine[A](request: Request[A]) = Future.successful {
-      Right(new ToggledRequest[A](toguruClient.clientProvider(request), toguruClient.activationsProvider(), request))
+      Right(
+        new ToggledRequest[A](toguruClient.clientProvider(request),
+                              toguruClient.activationsProvider(),
+                              request))
     }
   }
 
-  class ToggledRequest[A](
-             val client: ClientInfo,
-             val activations: Activations,
-             request : Request[A]) extends WrappedRequest[A](request) with Toggling
+  class ToggledRequest[A](val client: ClientInfo,
+                          val activations: Activations,
+                          request: Request[A])
+      extends WrappedRequest[A](request)
+      with Toggling
 }
