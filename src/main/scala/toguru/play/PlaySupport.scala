@@ -10,6 +10,8 @@ import toguru.api._
 import scala.language.implicitConversions
 import scala.util.Try
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 /**
   * Default support methods for creating a ClientInfo from a Play Request and for toggling within play actions.
   *
@@ -56,7 +58,7 @@ import scala.util.Try
     }
   }
  }}}
- */
+  */
 object PlaySupport {
 
   /**
@@ -66,7 +68,8 @@ object PlaySupport {
     * @param endpointUrl the toguru server to use, e.g. <code>http://localhost:9000</code>
     * @return
     */
-  def toguruClient(clientProvider: PlayClientProvider, endpointUrl: String): PlayToguruClient =
+  def toguruClient(clientProvider: PlayClientProvider,
+                   endpointUrl: String): PlayToguruClient =
     new ToguruClient(clientProvider, Activations.fromEndpoint(endpointUrl))
 
   /**
@@ -76,7 +79,9 @@ object PlaySupport {
     * @param testActivations the acrt
     * @return
     */
-  def testToguruClient(clientProvider: PlayClientProvider, testActivations: Activations.Provider): PlayToguruClient =
+  def testToguruClient(
+      clientProvider: PlayClientProvider,
+      testActivations: Activations.Provider): PlayToguruClient =
     new ToguruClient(clientProvider, testActivations)
 
   /**
@@ -86,44 +91,64 @@ object PlaySupport {
     * @param toguruClient the play toguru client to use
     * @return
     */
-  def ToggledAction(toguruClient: PlayToguruClient): ActionBuilder[ToggledRequest] =
-    Action andThen new TogglingRefiner(toguruClient)
+  def ToggledAction(toguruClient: PlayToguruClient,
+                    bodyParser: BodyParser[AnyContent])
+    : ActionBuilder[ToggledRequest, AnyContent] =
+    DefaultActionBuilder(bodyParser) andThen new TogglingRefiner(toguruClient)
 
-  def uuidFromCookieValue(cookieName: String)(implicit requestHeader: RequestHeader): Option[UUID] =
-    requestHeader.cookies.get(cookieName).flatMap(c => Try(UUID.fromString(c.value)).toOption)
+  def uuidFromCookieValue(cookieName: String)(
+      implicit requestHeader: RequestHeader): Option[UUID] =
+    requestHeader.cookies
+      .get(cookieName)
+      .flatMap(c => Try(UUID.fromString(c.value)).toOption)
 
-  def fromCookie(name: String)(implicit requestHeader: RequestHeader): Option[(String, String)] =
+  def fromCookie(name: String)(
+      implicit requestHeader: RequestHeader): Option[(String, String)] =
     requestHeader.cookies.get(name).map(name -> _.value)
 
-  def fromHeader(name: String)(implicit requestHeader: RequestHeader): Option[(String, String)] =
+  def fromHeader(name: String)(
+      implicit requestHeader: RequestHeader): Option[(String, String)] =
     requestHeader.headers.get(name).map(name -> _)
 
-  def forcedToggle(toggleId: ToggleId)(implicit requestHeader: RequestHeader): Option[Boolean] = {
+  def forcedToggle(toggleId: ToggleId)(
+      implicit requestHeader: RequestHeader): Option[Boolean] = {
 
-    def lowerCaseKeys[T](m: Map[String,T]) = m.map { case (k, v) => (k.toLowerCase, v) }
+    def lowerCaseKeys[T](m: Map[String, T]) = m.map {
+      case (k, v) => (k.toLowerCase, v)
+    }
 
     val headers = lowerCaseKeys(requestHeader.headers.toSimpleMap)
-    lazy val maybeForcedFromHeader = headers.get("x-toguru").orElse(headers.get("toguru")).
-      flatMap(togglesString => parse(togglesString)(toggleId))
-    lazy val maybeForcedFromCookie = requestHeader.cookies.get("toguru")
+    lazy val maybeForcedFromHeader = headers
+      .get("x-toguru")
+      .orElse(headers.get("toguru"))
+      .flatMap(togglesString => parse(togglesString)(toggleId))
+    lazy val maybeForcedFromCookie = requestHeader.cookies
+      .get("toguru")
       .orElse(requestHeader.cookies.get("toguru"))
       .flatMap(cookie => parse(cookie.value)(toggleId))
 
-    lazy val lowerCasedKeysQueryStringMap = lowerCaseKeys(requestHeader.queryString)
+    lazy val lowerCasedKeysQueryStringMap = lowerCaseKeys(
+      requestHeader.queryString)
 
     lazy val parseToggleQueryString: ToggleId => Option[Boolean] = {
-      val maybeToggleString: Option[List[String]] = lowerCasedKeysQueryStringMap.get("toguru").map(_.toList)
+      val maybeToggleString: Option[List[String]] =
+        lowerCasedKeysQueryStringMap.get("toguru").map(_.toList)
 
-      toggleId => {
-        maybeToggleString.map {
-          case Nil => None
-          case toggleString :: _ => // we ignore toggles defined twice by the client
-            parse(toggleString)(toggleId)
-        }.getOrElse(None)
-      }
+      toggleId =>
+        {
+          maybeToggleString
+            .map {
+              case Nil => None
+              case toggleString :: _ => // we ignore toggles defined twice by the client
+                parse(toggleString)(toggleId)
+            }
+            .getOrElse(None)
+        }
     }
 
     val maybeForcedFromQueryParam = parseToggleQueryString(toggleId)
-    maybeForcedFromQueryParam.orElse(maybeForcedFromHeader).orElse(maybeForcedFromCookie)
+    maybeForcedFromQueryParam
+      .orElse(maybeForcedFromHeader)
+      .orElse(maybeForcedFromCookie)
   }
 }
