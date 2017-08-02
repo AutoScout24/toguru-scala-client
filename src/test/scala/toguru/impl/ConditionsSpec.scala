@@ -2,22 +2,22 @@ package toguru.impl
 
 import java.util.UUID
 
-import org.scalatest.{ShouldMatchers, WordSpec}
+import org.scalatest.{MustMatchers, WordSpec}
 import toguru.api.ClientInfo
 
-class ConditionsSpec extends WordSpec with ShouldMatchers {
+class ConditionsSpec extends WordSpec with MustMatchers {
 
   "Attribute conditions" should {
     "apply correctly to de-DE culture" in {
       val clientInfo = ClientInfo(attributes = Map("culture" -> "de-DE"))
 
-      Attribute("culture", Seq("de-DE")).applies(clientInfo) shouldBe true
+      Attribute("culture", Seq("de-DE")).applies(clientInfo) mustBe true
     }
 
     "apply if one value matches" in {
       val clientInfo = ClientInfo(attributes = Map("culture" -> "de-DE"))
 
-      Attribute("culture", Seq("de-DE", "de-AT")).applies(clientInfo) shouldBe true
+      Attribute("culture", Seq("de-DE", "de-AT")).applies(clientInfo) mustBe true
     }
   }
 
@@ -26,17 +26,17 @@ class ConditionsSpec extends WordSpec with ShouldMatchers {
 
     "return true if no condition is given" in {
       val clientInfo = ClientInfo()
-      All(Set.empty).applies(clientInfo) shouldBe true
+      All(Set.empty).applies(clientInfo) mustBe true
     }
 
     "Evaluate to true if all conditions are met" in {
       val clientInfo = ClientInfo(attributes = Map("one" -> "one", "two" -> "two"))
-      myAllCondition.applies(clientInfo) shouldBe true
+      myAllCondition.applies(clientInfo) mustBe true
     }
 
     "Evaluate to false if one condition is unmet" in {
       val clientInfo = ClientInfo(attributes = Map("one" -> "one"))
-      myAllCondition.applies(clientInfo) shouldBe false
+      myAllCondition.applies(clientInfo) mustBe false
     }
   }
 
@@ -45,22 +45,22 @@ class ConditionsSpec extends WordSpec with ShouldMatchers {
 
     "apply to true if uuid is projected into the given range" in {
       val clientInfo = ClientInfo(uuid = Some(uuidWithDefaultProjectionToFive))
-      UuidDistributionCondition(3 to 5).applies(clientInfo) shouldBe true
+      UuidDistributionCondition(3 to 5).applies(clientInfo) mustBe true
     }
 
     "apply to false if uuid is projected outside the given range" in {
       val clientInfo = ClientInfo(uuid = Some(uuidWithDefaultProjectionToFive))
-      UuidDistributionCondition(10 to 11).applies(clientInfo) shouldBe false
+      UuidDistributionCondition(10 to 11).applies(clientInfo) mustBe false
     }
 
     "apply to false if uuid is none and rollout is 100%" in {
       val clientInfo = ClientInfo(uuid = None)
-      UuidDistributionCondition(1 to 100).applies(clientInfo) shouldBe false
+      UuidDistributionCondition(1 to 100).applies(clientInfo) mustBe false
     }
 
     "apply to false if uuid is none and rollout is 1%" in {
       val clientInfo = ClientInfo(uuid = None)
-      UuidDistributionCondition(1 to 1).applies(clientInfo) shouldBe false
+      UuidDistributionCondition(1 to 1).applies(clientInfo) mustBe false
     }
 
     "throw an exception if the range is not between 1 and 100" in {
@@ -75,8 +75,8 @@ class ConditionsSpec extends WordSpec with ShouldMatchers {
 
     s"project random uuid ($uuid) between 1 and 100" in {
       val projected = UuidDistributionCondition.defaultUuidToIntProjection(uuid)
-      projected shouldBe >(0)
-      projected shouldBe <=(100)
+      projected mustBe >(0)
+      projected mustBe <=(100)
     }
   }
 }

@@ -5,7 +5,7 @@ import toguru.helpers.ClientInfoHelper
 import toguru.helpers.ClientInfoHelper._
 import toguru.test.TestActivations
 
-class TogglingSpec extends FeatureSpec with ShouldMatchers {
+class TogglingSpec extends FeatureSpec with MustMatchers {
 
   feature("Can change toggle state") {
     scenario("toggle state in toggle info is applied") {
@@ -14,7 +14,7 @@ class TogglingSpec extends FeatureSpec with ShouldMatchers {
 
       implicit val info = TogglingInfo(ClientInfo(), activation)
 
-      toggle1.isOn shouldBe true
+      toggle1.isOn mustBe true
     }
 
     scenario("default toggle state is applied") {
@@ -23,7 +23,7 @@ class TogglingSpec extends FeatureSpec with ShouldMatchers {
 
       implicit val info = TogglingInfo(ClientInfo(), activation)
 
-      toggle1.isOn shouldBe true
+      toggle1.isOn mustBe true
     }
 
     scenario("toggle state can be forced by client info") {
@@ -33,7 +33,7 @@ class TogglingSpec extends FeatureSpec with ShouldMatchers {
 
       implicit val toggleInfo = TogglingInfo(info, activation)
 
-      toggle1.isOn shouldBe true
+      toggle1.isOn mustBe true
     }
 
     scenario("toggle state falls back to false if client uuid is None") {
@@ -43,7 +43,7 @@ class TogglingSpec extends FeatureSpec with ShouldMatchers {
 
       implicit val toggleInfo = TogglingInfo(info, activation)
 
-      toggle1.isOn shouldBe false
+      toggle1.isOn mustBe false
     }
   }
 
@@ -56,7 +56,7 @@ class TogglingSpec extends FeatureSpec with ShouldMatchers {
       val clientInfo = ClientInfo(None, forceToggleTo("feature1", enabled = true))
       implicit val toggleInfo = TogglingInfo(clientInfo, activations)
 
-      toggleInfo().buildString should be("feature1=true")
+      toggleInfo().buildString mustBe ("feature1=true")
     }
 
     scenario("produces 'off' when toggle state is 'on' but the client overrides it to be 'off'") {
@@ -65,7 +65,7 @@ class TogglingSpec extends FeatureSpec with ShouldMatchers {
       implicit val clientInfo: ClientInfo = ClientInfo(None, forceToggleTo("feature1", enabled = false))
       implicit val toggleInfo = TogglingInfo(clientInfo, activations)
 
-      toggleInfo().buildString should be("feature1=false")
+      toggleInfo().buildString mustBe ("feature1=false")
     }
 
     scenario("produces 'on' when toggle state is 'on'") {
@@ -74,7 +74,7 @@ class TogglingSpec extends FeatureSpec with ShouldMatchers {
       implicit val clientInfo: ClientInfo = ClientInfo()
       implicit val toggleInfo = TogglingInfo(clientInfo, activations)
 
-      toggleInfo().buildString should be("feature1=true")
+      toggleInfo().buildString mustBe ("feature1=true")
     }
 
   }

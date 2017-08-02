@@ -3,11 +3,11 @@ package toguru.test
 import org.scalatest._
 import toguru.api._
 
-class TestActivationsSpec extends WordSpec with ShouldMatchers {
+class TestActivationsSpec extends WordSpec with MustMatchers {
 
   "healthy" should {
     "always return true" in {
-      TestActivations()().healthy() shouldBe true
+      TestActivations()().healthy() mustBe true
     }
   }
 
@@ -17,7 +17,7 @@ class TestActivationsSpec extends WordSpec with ShouldMatchers {
       val activationsProvider = TestActivations(toggle -> Condition.On)()
       val activations = activationsProvider()
 
-      activations(toggle) shouldBe Condition.On
+      activations(toggle) mustBe Condition.On
     }
 
     "return the default activations if no activation was given" in {
@@ -25,7 +25,7 @@ class TestActivationsSpec extends WordSpec with ShouldMatchers {
       val activationsProvider = TestActivations()()
       val activations = activationsProvider()
 
-      activations(toggle) shouldBe Condition.On
+      activations(toggle) mustBe Condition.On
     }
   }
 
@@ -37,8 +37,8 @@ class TestActivationsSpec extends WordSpec with ShouldMatchers {
 
       val toggles = activations().togglesFor("my-service")
 
-      toggles.size shouldBe 1
-      toggles.get("test-toggle") shouldBe Some(Condition.On)
+      toggles.size mustBe 1
+      toggles.get("test-toggle") mustBe Some(Condition.On)
     }
   }
 }

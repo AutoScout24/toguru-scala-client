@@ -8,12 +8,14 @@ cache:
 
 scala:
 - 2.11.8
+- 2.12.3
 
 jdk:
 - oraclejdk8
 
 script:
-- sbt clean coverage test package
+- sbt ++$TRAVIS_SCALA_VERSION clean coverage test package coverageReport
+- sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
 # Trick to avoid unnecessary cache updates
 - find $HOME/.sbt -name "*.lock" | xargs rm
 
@@ -25,7 +27,7 @@ notifications:
     on_failure: always
 
 after_success:
-  - sbt coveralls
+  - sbt ++$TRAVIS_SCALA_VERSION coveralls
   - >
     if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_REPO_SLUG" = "AutoScout24/toguru-scala-client" ]; then
       if [ "$TRAVIS_BRANCH" == "master" ] || [[ $TRAVIS_TAG ]]; then

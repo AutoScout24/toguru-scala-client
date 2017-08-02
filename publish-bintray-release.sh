@@ -14,4 +14,4 @@ echo "Created ~/.bintray/.credentials file: Here it is: "
 ls -la $FILE
 
 # publish release with bintray-sbt
-sbt publish
+sbt +publish

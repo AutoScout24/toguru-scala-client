@@ -3,23 +3,23 @@ package toguru.impl
 import java.util.UUID
 
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.{ShouldMatchers, WordSpec}
+import org.scalatest.{MustMatchers, WordSpec}
 import toguru.api.ClientInfo
 
-class UuidDistributionConditionSpec extends WordSpec with ShouldMatchers with TableDrivenPropertyChecks {
+class UuidDistributionConditionSpec extends WordSpec with MustMatchers with TableDrivenPropertyChecks {
 
   "Invalid ranges" should {
     "Lower boundary is too low" in {
 
       intercept[IllegalArgumentException] {
         UuidDistributionCondition.apply(0 to 10)
-      }.getMessage shouldBe "Range should describe a range between 1 and 100 inclusive"
+      }.getMessage mustBe "Range should describe a range between 1 and 100 inclusive"
     }
 
     "Upper boundary is too high" in {
       intercept[IllegalArgumentException] {
         UuidDistributionCondition.apply(90 to 101)
-      }.getMessage shouldBe "Range should describe a range between 1 and 100 inclusive"
+      }.getMessage mustBe "Range should describe a range between 1 and 100 inclusive"
     }
   }
 
@@ -29,7 +29,7 @@ class UuidDistributionConditionSpec extends WordSpec with ShouldMatchers with Ta
         _ =>
           val uuid = UUID.randomUUID()
           val info = ClientInfo(uuid = Some(uuid))
-          UuidDistributionCondition.apply(1 to 100).applies(info) shouldBe true
+          UuidDistributionCondition.apply(1 to 100).applies(info) mustBe true
       }
     }
   }
@@ -64,7 +64,7 @@ class UuidDistributionConditionSpec extends WordSpec with ShouldMatchers with Ta
       val projection = UuidDistributionCondition.defaultUuidToIntProjection
 
       forAll(uuidMappings) { (uuid: String, bucket: Int) =>
-        projection(UUID.fromString(uuid)) shouldBe bucket
+        projection(UUID.fromString(uuid)) mustBe bucket
       }
     }
   }
