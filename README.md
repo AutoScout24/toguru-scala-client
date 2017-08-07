@@ -65,6 +65,53 @@ else
   Ok("Toggle is off")
 ```
 
+## Support for Fan-Out Requests
+
+In a microservice environment, a request to a service can produce multiple
+sub-requests. When doing feature toggling, it is important to keep the toggle
+state consistent over the sub-requests for a main request.
+
+To do this you can
+* define the service a toggle belongs to, and
+* pass the toggle state along with the request to the owning service.
+
+Here is how this would look like for a service included via [nginx server-side includes](http://nginx.org/en/docs/http/ngx_http_ssi_module.html#commands):
+
+*Defining the service a toggle belongs to*: define a tag (e.g. `service`) to identify all toggles to be passed along. Using curl, a toggle with id `my-toggle` can be associated to the service `owning-service` as follows:
+
+```
+curl -XPUT https://your-endpoint.example.com/toggle/my-toggle -d '{ "tags": { "service" : "owning-service" } }'
+```
+
+*Pass the toggle state*: In the controller, you can then build a toggle string:
+
+```scala
+  import toguru.implicits.toggle._
+
+  // either built yourself or built using ToggledRequest
+  val toggleInfo: TogglingInfo = ...
+  val toggleString = toggleInfo()
+    .filter { _.tags.get("service").contains("owning-service") }
+    .buildString
+```
+
+In your html template (passing through `toggleString`), you can then pass the
+toggle state using the `toguru` query parameter:
+
+```
+  @Html(s"""<!--#include virtual="/fragment/contentservice/header.html?toguru=${toggleString}" -->""")
+```
+
+If the included service uses Toguru, the toggle state of all toggles having
+the `service` tag set to `owning-service` will be enforced to have the state
+determined by the caller service. You can pass along the toggle state by setting:
+
+* the `x-toguru` or `toguru` header,
+* the `toguru` cookie, or
+* the `toguru` query parameter.
+
+For details, see the [forcedToggle](https://github.com/AutoScout24/toguru-scala-client/blob/f46aec3231759934b75023bf38026fe730803dc4/src/main/scala/toguru/play/AbstractPlaySupport.scala#L51) method.
+
 ## Play support
 
 The Toguru Scala client offers several convenience utilities, however.
