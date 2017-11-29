@@ -195,7 +195,13 @@ val client: PlayClientProvider = { implicit request =>
 ```
 
 By this, the activation of a toggle can be controlled based on the value of
-custom attributes.
+custom attributes. 
+
+In Toguru you would configure:
+```
+  { "rollout": { "percentage": 100 }, "attributes": { "culture": ["de-DE"] }}
+```
+This would activte the feature toggle for all persons with `de-DE` as `culture` cookie value.
 
 ## Testing toggled code
 
@@ -212,6 +218,10 @@ val controller = new MyController(toguruClient)
 
 see the [PlaySupport spec](src/test/scala/toguru/play/PlaySupportSpec.scala) for
 full usage examples in Scala Play.
+
+## Pitfalls
+* To activate the toggling based on custom client attributes there must be a non-zero rollout percentage configured. Rollout percentage and one or more attributes are logically conjuncted.
+* The client id has to be set in `ClientInfo` for the toggling to work properly
 
 ## Copyright
 
