@@ -49,11 +49,6 @@ object UuidDistributionCondition {
 
   val defaultUuidToIntProjection: UUID => Int = {
     (uuid) =>
-      val hibits = uuid.getMostSignificantBits
-      val lobits = uuid.getLeastSignificantBits
-      val barrayHi = BigInteger.valueOf(hibits).toByteArray
-      val barrayLo = BigInteger.valueOf(lobits).toByteArray
-      val comb = barrayLo ++ barrayHi
-      Math.abs(new BigInteger(comb).mod(BigInteger.valueOf(100l)).intValue()) + 1
+      new BigInteger(uuid.toString().replace('-', ''), 16).mod(BigInteger.valueOf(100l)).intValue() + 1
   }
 }
