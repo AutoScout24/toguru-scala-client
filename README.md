@@ -201,7 +201,7 @@ In Toguru you would configure:
 ```
   { "rollout": { "percentage": 100 }, "attributes": { "culture": ["de-DE"] }}
 ```
-This would activte the feature toggle for all persons with `de-DE` as `culture` cookie value.
+This would activate the feature toggle for all persons with `de-DE` as `culture` cookie value.
 
 ## Testing toggled code
 
