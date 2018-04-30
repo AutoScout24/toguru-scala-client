@@ -16,6 +16,7 @@ Add to your `build.sbt` following resolver with dependency:
 
 ```scala
 resolvers += Resolver.bintrayRepo("autoscout24", "maven")
+resolvers += Resolver.jcenterRepo // For transitive dependencies
 
 libraryDependencies += "com.autoscout24" %% "toguru-scala-client" % "(see version number above)",
 ```
