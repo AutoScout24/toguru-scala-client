@@ -34,14 +34,15 @@ trait Toggling {
     *                the toguru server.
     * @return
     */
-  @deprecated("It will be removed, use apply(s: String) instead", "1.0.2")
   def toggleStringForService(service: String): String = {
-    // $COVERAGE-OFF$Disabled because it's deprecated
-    val toggleStates = activations.togglesFor(service)
-      .map { case (id, c) => id -> client.forcedToggle(id).getOrElse(c.applies(client))}
+    val toggleStates =
+      activations
+        .togglesFor(service)
+        .map { case (toggleId, condition) =>
+          toggleId -> client.forcedToggle(toggleId).getOrElse(condition.applies(client))
+        }
 
     TogglesString.build(toggleStates)
-    // $COVERAGE-ON$
   }
 }
 
