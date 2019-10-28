@@ -30,7 +30,7 @@ trait Toggling {
   /**
     * Returns a toggling string for downstream services.
     *
-    * @param service the name of the downstream service - must match the "services" tag defined on the toggle on
+    * @param service the name of the downstream service - must match the "service" tag or be included in the "services" tag defined on the toggle on
     *                the toguru server.
     * @return
     */
