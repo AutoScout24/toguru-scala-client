@@ -15,7 +15,13 @@ class ToggleStateSpec extends WordSpec with MustMatchers with MockitoSugar {
     ToggleState("toggle1", Map("services" -> "toguru"), activation(rollout(30))),
     ToggleState("toggle-2", Map.empty[String, String], activation(rollout(100))),
     ToggleState("toggle-4", Map.empty[String, String], activation(attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))),
-    ToggleState("toggle-5", Map.empty[String, String], activation(rollout(30), attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))))
+    ToggleState("toggle-5", Map.empty[String, String], activation(rollout(30), attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))),
+    ToggleState("toggle6", Map("services" -> "my-service,another-service"), activation(rollout(15))),
+    ToggleState("toggle7", Map("services" -> "my-service "), activation(rollout(1))),
+    ToggleState("toggle8", Map("service" -> " my-service"), activation(rollout(100))),
+    ToggleState("toggle9", Map("services" -> "another-service,yet-another-service,my-service"), activation()),
+    ToggleState("toggle10", Map("services" -> "another-service, my-service, yet-another-service"), activation())
+  )
 
 
   "ToggleState.apply" should {
@@ -63,6 +69,13 @@ class ToggleStateSpec extends WordSpec with MustMatchers with MockitoSugar {
       val uuidCondition = condition.asInstanceOf[UuidDistributionCondition]
 
       uuidCondition.ranges mustBe List(1 to 30)
+    }
+
+    "return all toggle activations for a service" in {
+      val toguruToggles = activations.togglesFor("my-service")
+
+      toguruToggles must have size 5
+      toguruToggles.keySet mustBe Set("toggle6", "toggle7", "toggle8", "toggle9", "toggle10")
     }
 
     "return toggle default conditions if toggle is unknown" in {

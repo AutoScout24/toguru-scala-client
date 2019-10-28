@@ -1,5 +1,6 @@
 package toguru.impl
 
+import toguru.api.Toggle.ToggleId
 import toguru.api.{Activations, Condition, Toggle}
 
 case class ToggleStates(sequenceNo: Option[Long], toggles: Seq[ToggleState])
@@ -43,14 +44,15 @@ class ToggleStateActivations(toggleStates: ToggleStates) extends Activations {
 
   override def apply(): Traversable[ToggleState] = toggleStates.toggles
 
-  override def togglesFor(service: String) = {
-    val toggles =
-      for {
-        toggle <- toggleStates.toggles if toggle.tags.get("services").contains(service)
-        id = toggle.id
-      } yield (id, conditions(id))
-    toggles.toMap
-  }
+  override def togglesFor(service: String): Map[ToggleId, Condition] =
+    toggleStates
+      .toggles
+      .filter { toggle =>
+        toggle.tags.get("services").toVector.flatMap(_.split(",")).exists(_.trim == service) ||
+        toggle.tags.get("service").exists(_.trim == service)
+      }
+      .map(toggle => toggle.id -> conditions(toggle.id))
+      .toMap
 
   override def stateSequenceNo: Option[Long] = toggleStates.sequenceNo
 }
