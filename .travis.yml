@@ -5,6 +5,7 @@ cache:
   - "$HOME/.m2/repository"
   - "$HOME/.sbt"
   - "$HOME/.ivy2"
+  - "$HOME/.cache/coursier"
 
 scala:
 - 2.11.8
