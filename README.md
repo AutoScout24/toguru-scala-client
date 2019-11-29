@@ -84,32 +84,32 @@ You can edit toggle tags at https://toguru-panel.tools.autoscout24.com/#/
 Let's assume, we have some toggles defined as shown below. First three of them are related to `owning-service`
 ```json
 {
-  id: "toggle1",
-  tags: {
-    service: "owning-service"
+  "id": "toggle1",
+  "tags": {
+    "service": "owning-service"
   },
-  rolloutPercentage: 100
+  "rolloutPercentage": 100
 },
 {
-  id: "toggle2",
-  tags: {
-    services: "owning-service"
+  "id": "toggle2",
+  "tags": {
+    "services": "owning-service"
   },
-  rolloutPercentage: 0
+  "rolloutPercentage": 0
 },
 {
-  id: "toggle3",
-  tags: {
-    services: "another-owning-service,owning-service"
+  "id": "toggle3",
+  "tags": {
+    "services": "another-owning-service,owning-service"
   },
-  rolloutPercentage: 100
+  "rolloutPercentage": 100
 },
 {
-  id: "toggle4",
-  tags: {
-    service: "another-owning-service"
+  "id": "toggle4",
+  "tags": {
+    "service": "another-owning-service"
   },
-  rolloutPercentage: 100
+  "rolloutPercentage": 100
 }
 
 ```
