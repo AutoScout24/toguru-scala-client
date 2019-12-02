@@ -80,6 +80,7 @@ Here is how this would look like for a service included via [nginx server-side i
 
 ### Defining the service or services a toggle belongs to 
 Use `service` or `services` tag to identify all toggles to be passed along. 
+`services` tag expects a string in which service names are separated via commas. (e.g. `"services": "service1,service2,service3"`)
 You can edit toggle tags at https://toguru-panel.tools.autoscout24.com/#/ 
 Let's assume, we have some toggles defined as shown below. First three of them are related to `owning-service`
 ```json
