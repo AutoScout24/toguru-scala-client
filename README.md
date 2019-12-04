@@ -78,21 +78,65 @@ To do this you can
 
 Here is how this would look like for a service included via [nginx server-side includes](http://nginx.org/en/docs/http/ngx_http_ssi_module.html#commands):
 
-*Defining the service a toggle belongs to*: define a tag (e.g. `service`) to identify all toggles to be passed along. Using curl, a toggle with id `my-toggle` can be associated to the service `owning-service` as follows:
+### Defining the service or services a toggle belongs to 
+Use `service` or `services` tag to identify all toggles to be passed along. 
+`services` tag expects a string in which service names are separated via commas. (e.g. `"services": "service1,service2,service3"`)
+You can edit toggle tags at https://toguru-panel.tools.autoscout24.com/#/ 
+Let's assume, we have some toggles defined as shown below. First three of them are related to `owning-service`
+```json
+{
+  "id": "toggle1",
+  "tags": {
+    "service": "owning-service"
+  },
+  "rolloutPercentage": 100
+},
+{
+  "id": "toggle2",
+  "tags": {
+    "services": "owning-service"
+  },
+  "rolloutPercentage": 0
+},
+{
+  "id": "toggle3",
+  "tags": {
+    "services": "another-owning-service,owning-service"
+  },
+  "rolloutPercentage": 100
+},
+{
+  "id": "toggle4",
+  "tags": {
+    "service": "another-owning-service"
+  },
+  "rolloutPercentage": 100
+}
 
 ```
-curl -XPUT https://your-endpoint.example.com/toggle/my-toggle -d '{ "tags": { "service" : "owning-service" } }'
+
+### Passing the toggle state
+The library has already the function to build toggle string 
+for a given service name (it takes only `service` and `services` tags into consideration). 
+See the examples below:
+```scala
+  import toguru.implicits.toggle._
+
+  def function(...)(implicit toggling: Toggling): Unit = {
+    toggling.toggleStringForService("owning-service") // This would return: toggle1=true|toggle2=false|toggle3=true
+
+    toggling.toggleStringForService("another-owning-service") // This would return: toggle3=true|toggle4=true
+  }
 ```
 
-*Pass the toggle state*: In the controller, you can then build a toggle string:
+If you used another tag, you can build the toggle string as shown below:
 
 ```scala
   import toguru.implicits.toggle._
 
-  // either built yourself or built using ToggledRequest
   val toggleInfo: TogglingInfo = ...
   val toggleString = toggleInfo()
-    .filter { _.tags.get("service").contains("owning-service") }
+    .filter { _.tags.get("some-custom-tag").contains("owning-service") }
     .buildString
 ```
 
@@ -103,15 +147,11 @@ toggle state using the `toguru` query parameter:
   @Html(s"""<!--#include virtual="/fragment/contentservice/header.html?toguru=${toggleString}" -->""")
 ```
 
-If the included service uses Toguru, the toggle state of all toggles having
-the `service` tag set to `owning-service` will be enforced to have the state
-determined by the caller service. You can pass along the toggle state by setting:
+Other ways to pass toggle string along:
+* the `x-toguru` or `toguru` header
+* the `toguru` cookie
 
-* the `x-toguru` or `toguru` header,
-* the `toguru` cookie, or
-* the `toguru` query parameter.
-
-For details, see the [forcedToggle](https://github.com/AutoScout24/toguru-scala-client/blob/f46aec3231759934b75023bf38026fe730803dc4/src/main/scala/toguru/play/AbstractPlaySupport.scala#L51) method.
+For details, see the [forcedToggle](https://github.com/AutoScout24/toguru-scala-client/blob/master/src/main/scala/toguru/play/AbstractPlaySupport.scala#L51) method.
 
 ## Play support
 
