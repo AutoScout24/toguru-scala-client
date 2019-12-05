@@ -14,7 +14,7 @@ scalaVersion in ThisBuild := "2.11.8"
 scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature", "-Xfatal-warnings",
   "-Yno-adapted-args", "-Xmax-classfile-name", "130")
 
-resolvers += Resolver.jcenterRepo
+resolvers ++= Seq(Resolver.jcenterRepo, Resolver.bintrayRepo("autoscout24", "maven"))
 
 libraryDependencies in ThisBuild ++= Seq(
   "org.scalaj" %% "scalaj-http" % "2.3.0",
