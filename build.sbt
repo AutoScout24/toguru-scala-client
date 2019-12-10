@@ -54,3 +54,6 @@ resolvers in ThisBuild ++= Seq(
   Classpaths.sbtPluginReleases,
   "Typesafe repository" at "https://repo.typesafe.com/typesafe/releases/"
 )
+
+addCommandAlias("format", "; scalafmt; test:scalafmt; scalafmtSbt")
+addCommandAlias("formatCheck", "; scalafmtCheck; test:scalafmtCheck; scalafmtSbtCheck")
