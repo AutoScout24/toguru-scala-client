@@ -7,16 +7,11 @@ cache:
   - "$HOME/.ivy2"
   - "$HOME/.cache/coursier"
 
-scala:
-- 2.11.8
-- 2.12.3
-
 jdk:
 - openjdk8
 
 script:
-- sbt ++$TRAVIS_SCALA_VERSION clean coverage formatCheck test package coverageReport
-- sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
+- sbt clean coverage formatCheck test package coverageReport coverageAggregate
 # Trick to avoid unnecessary cache updates
 - find $HOME/.sbt -name "*.lock" | xargs rm
 
