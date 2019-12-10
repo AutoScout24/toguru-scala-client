@@ -25,11 +25,10 @@ class UuidDistributionConditionSpec extends WordSpec with MustMatchers with Tabl
 
   "Valid UUIDs" should {
     "be projected within max range" in {
-      1 to 1000 foreach {
-        _ =>
-          val uuid = UUID.randomUUID()
-          val info = ClientInfo(uuid = Some(uuid))
-          UuidDistributionCondition.apply(1 to 100).applies(info) mustBe true
+      (1 to 1000).foreach { _ =>
+        val uuid = UUID.randomUUID()
+        val info = ClientInfo(uuid = Some(uuid))
+        UuidDistributionCondition.apply(1 to 100).applies(info) mustBe true
       }
     }
   }

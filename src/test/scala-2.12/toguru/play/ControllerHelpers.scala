@@ -13,13 +13,12 @@ trait ControllerHelpers {
   val toggle = Toggle("toggle-1")
 
   // you will write such a class in your play app to automatically convert from Play's RequestHeader to ClientInfo
-  abstract class ToggledController(toguru: PlayToguruClient, cc: ControllerComponents)
-    extends AbstractController(cc) {
+  abstract class ToggledController(toguru: PlayToguruClient, cc: ControllerComponents) extends AbstractController(cc) {
     val ToggledAction = PlaySupport.ToggledAction(toguru, cc.parsers.defaultBodyParser)
   }
 
-  class MyController @Inject()(toguru: PlayToguruClient, cc: ControllerComponents)
-    extends ToggledController(toguru, cc) {
+  class MyController @Inject() (toguru: PlayToguruClient, cc: ControllerComponents)
+      extends ToggledController(toguru, cc) {
 
     def myAction = ToggledAction { implicit request =>
       if (toggle.isOn)
@@ -29,8 +28,8 @@ trait ControllerHelpers {
     }
   }
 
-  class MyControllerWithOwnTogglingInfo @Inject()(toguru: PlayToguruClient, cc: ControllerComponents)
-    extends AbstractController(cc) {
+  class MyControllerWithOwnTogglingInfo @Inject() (toguru: PlayToguruClient, cc: ControllerComponents)
+      extends AbstractController(cc) {
 
     def myAction = Action { request =>
       implicit val toggling = toguru(request)
@@ -42,20 +41,16 @@ trait ControllerHelpers {
     }
   }
 
-  def createToggledController(
-      provider: Activations.Provider = TestActivations()()) = {
+  def createToggledController(provider: Activations.Provider = TestActivations()()) = {
 
     val toguruClient = PlaySupport.testToguruClient(client, provider)
 
     new ToggledController(toguruClient, Helpers.stubControllerComponents()) {}
   }
 
-  def createMyController(toguru: PlayToguruClient) = {
+  def createMyController(toguru: PlayToguruClient) =
     new MyController(toguru, Helpers.stubControllerComponents())
-  }
 
-  def createMyControllerWithOwnTogglingInfo(toguru: PlayToguruClient) = {
-    new MyControllerWithOwnTogglingInfo(toguru,
-                                        Helpers.stubControllerComponents())
-  }
+  def createMyControllerWithOwnTogglingInfo(toguru: PlayToguruClient) =
+    new MyControllerWithOwnTogglingInfo(toguru, Helpers.stubControllerComponents())
 }

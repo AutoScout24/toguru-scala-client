@@ -38,8 +38,9 @@ trait Toggling {
     val toggleStates =
       activations
         .togglesFor(service)
-        .map { case (toggleId, condition) =>
-          toggleId -> client.forcedToggle(toggleId).getOrElse(condition.applies(client))
+        .map {
+          case (toggleId, condition) =>
+            toggleId -> client.forcedToggle(toggleId).getOrElse(condition.applies(client))
         }
 
     TogglesString.build(toggleStates)

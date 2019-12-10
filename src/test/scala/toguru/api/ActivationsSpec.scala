@@ -18,7 +18,7 @@ class ActivationsSpec extends FeatureSpec with MustMatchers with MockitoSugar {
   feature("Default activations") {
     scenario("return toggle's default activation") {
       val condition = mock[Condition]
-      val toggle = Toggle("toggle-1", condition)
+      val toggle    = Toggle("toggle-1", condition)
 
       DefaultActivations.apply(toggle) mustBe condition
     }

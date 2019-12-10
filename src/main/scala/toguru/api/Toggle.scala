@@ -2,7 +2,6 @@ package toguru.api
 
 import toguru.api.Toggle.ToggleId
 
-
 object Toggle {
   type ToggleId = String
 }

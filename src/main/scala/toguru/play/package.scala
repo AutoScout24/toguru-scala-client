@@ -9,8 +9,7 @@ package object play {
 
   type PlayClientProvider = ClientInfo.Provider[Request[_]]
 
-  class ToggledRequest[A](
-             val client: ClientInfo,
-             val activations: Activations,
-             request : Request[A]) extends WrappedRequest[A](request) with Toggling
+  class ToggledRequest[A](val client: ClientInfo, val activations: Activations, request: Request[A])
+      extends WrappedRequest[A](request)
+      with Toggling
 }

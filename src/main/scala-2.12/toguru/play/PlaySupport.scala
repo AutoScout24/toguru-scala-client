@@ -72,8 +72,9 @@ object PlaySupport extends AbstractPlaySupport {
     * @param bodyParser the bodyParser of the controller action
     * @return
     */
-  def ToggledAction(toguruClient: PlayToguruClient,
-                    bodyParser: BodyParser[AnyContent])
-    : ActionBuilder[ToggledRequest, AnyContent] =
-    DefaultActionBuilder(bodyParser) andThen new TogglingRefiner(toguruClient)
+  def ToggledAction(
+      toguruClient: PlayToguruClient,
+      bodyParser: BodyParser[AnyContent]
+  ): ActionBuilder[ToggledRequest, AnyContent] =
+    DefaultActionBuilder(bodyParser).andThen(new TogglingRefiner(toguruClient))
 }

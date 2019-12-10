@@ -5,9 +5,10 @@ import java.util.UUID
 import toguru.api.Toggle.ToggleId
 
 case class ClientInfo(
-             uuid: Option[UUID] = None,
-             forcedToggle: ToggleId => Option[Boolean] = (_) => None,
-             attributes: Map[String, String] = Map.empty) {
+    uuid: Option[UUID] = None,
+    forcedToggle: ToggleId => Option[Boolean] = (_) => None,
+    attributes: Map[String, String] = Map.empty
+) {
 
   /**
     * create a copy of this client info that is enriched with the given attribute name/value pair

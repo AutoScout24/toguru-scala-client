@@ -49,7 +49,7 @@ trait ToguruClientMetrics {
 
   def fetchSuccess() = connectivity.heartbeat()
 
-  def fetchFailed()  = fetchFailures.inc()
+  def fetchFailed() = fetchFailures.inc()
 
   def connectError() = connectErrors.inc()
 

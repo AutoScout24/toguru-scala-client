@@ -29,31 +29,32 @@ case class Attribute(name: String, values: Seq[String]) extends Condition {
   */
 case class UuidDistributionCondition(ranges: Seq[Range], f: UUID => Int) extends Condition {
 
-  ranges.foreach(r => if (r.head < 1 || r.last > 100) throw new IllegalArgumentException("Range should describe a range between 1 and 100 inclusive"))
+  ranges.foreach(r =>
+    if (r.head < 1 || r.last > 100)
+      throw new IllegalArgumentException("Range should describe a range between 1 and 100 inclusive")
+  )
 
-  override def applies(clientInfo: ClientInfo): Boolean = {
+  override def applies(clientInfo: ClientInfo): Boolean =
     clientInfo.uuid match {
       case Some(uuid) =>
         val projected = f(uuid)
-        ranges.exists(range => {
+        ranges.exists { range =>
           range.contains(projected)
-        })
+        }
       case None => false
     }
-  }
 }
 
 object UuidDistributionCondition {
 
   def apply(range: Range, f: UUID => Int = defaultUuidToIntProjection): UuidDistributionCondition = apply(Seq(range), f)
 
-  val defaultUuidToIntProjection: UUID => Int = {
-    (uuid) =>
-      val hibits = uuid.getMostSignificantBits
-      val lobits = uuid.getLeastSignificantBits
-      val barrayHi = BigInteger.valueOf(hibits).toByteArray
-      val barrayLo = BigInteger.valueOf(lobits).toByteArray
-      val comb = barrayLo ++ barrayHi
-      Math.abs(new BigInteger(comb).mod(BigInteger.valueOf(100l)).intValue()) + 1
+  val defaultUuidToIntProjection: UUID => Int = { (uuid) =>
+    val hibits   = uuid.getMostSignificantBits
+    val lobits   = uuid.getLeastSignificantBits
+    val barrayHi = BigInteger.valueOf(hibits).toByteArray
+    val barrayLo = BigInteger.valueOf(lobits).toByteArray
+    val comb     = barrayLo ++ barrayHi
+    Math.abs(new BigInteger(comb).mod(BigInteger.valueOf(100L)).intValue()) + 1
   }
 }

@@ -28,8 +28,8 @@ class PlaySupportSpec extends WordSpec with MustMatchers with RequestHelpers wit
   "ToggledAction helper" should {
     "provide request with toggling information" in {
       implicit val timeout = Timeout(2.seconds)
-      val toguru = PlaySupport.testToguruClient(client, TestActivations(toggle -> Condition.On)())
-      val controller = createMyController(toguru)
+      val toguru           = PlaySupport.testToguruClient(client, TestActivations(toggle -> Condition.On)())
+      val controller       = createMyController(toguru)
 
       val request = FakeRequest(HttpVerbs.GET, "/")
 
@@ -42,8 +42,8 @@ class PlaySupportSpec extends WordSpec with MustMatchers with RequestHelpers wit
   "Direct toggling info" should {
     "provide toggling information" in {
       implicit val timeout = Timeout(2.seconds)
-      val toguru = PlaySupport.testToguruClient(client, TestActivations(toggle -> Condition.On)())
-      val controller = createMyControllerWithOwnTogglingInfo(toguru)
+      val toguru           = PlaySupport.testToguruClient(client, TestActivations(toggle -> Condition.On)())
+      val controller       = createMyControllerWithOwnTogglingInfo(toguru)
 
       val request = FakeRequest(HttpVerbs.GET, "/")
 
@@ -62,7 +62,9 @@ class PlaySupportSpec extends WordSpec with MustMatchers with RequestHelpers wit
 
     "extract of user agent from user agent header" in {
       val clientInfo = client(request)
-      clientInfo.attributes.get(UserAgent).value mustBe "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"
+      clientInfo.attributes
+        .get(UserAgent)
+        .value mustBe "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"
     }
 
     "extract of uuid from GUID or visitor cookie" in {

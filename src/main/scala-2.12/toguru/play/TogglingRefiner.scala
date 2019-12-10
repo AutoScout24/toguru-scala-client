@@ -20,9 +20,6 @@ override val activations = toguru.activationsProvider()
 class TogglingRefiner(toguruClient: PlayToguruClient)(implicit override val executionContext: ExecutionContext)
     extends ActionRefiner[Request, ToggledRequest] {
   def refine[A](request: Request[A]) = Future.successful {
-    Right(
-      new ToggledRequest[A](toguruClient.clientProvider(request),
-                            toguruClient.activationsProvider(),
-                            request))
+    Right(new ToggledRequest[A](toguruClient.clientProvider(request), toguruClient.activationsProvider(), request))
   }
 }

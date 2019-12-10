@@ -14,15 +14,22 @@ class ToggleStateSpec extends WordSpec with MustMatchers with MockitoSugar {
   val toggles = List(
     ToggleState("toggle1", Map("services" -> "toguru"), activation(rollout(30))),
     ToggleState("toggle-2", Map.empty[String, String], activation(rollout(100))),
-    ToggleState("toggle-4", Map.empty[String, String], activation(attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))),
-    ToggleState("toggle-5", Map.empty[String, String], activation(rollout(30), attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))),
-    ToggleState("toggle6", Map("services" -> "my-service,another-service"), activation(rollout(15))),
-    ToggleState("toggle7", Map("services" -> "my-service "), activation(rollout(1))),
-    ToggleState("toggle8", Map("service" -> " my-service"), activation(rollout(100))),
-    ToggleState("toggle9", Map("services" -> "another-service,yet-another-service,my-service"), activation()),
+    ToggleState(
+      "toggle-4",
+      Map.empty[String, String],
+      activation(attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))
+    ),
+    ToggleState(
+      "toggle-5",
+      Map.empty[String, String],
+      activation(rollout(30), attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))
+    ),
+    ToggleState("toggle6", Map("services"  -> "my-service,another-service"), activation(rollout(15))),
+    ToggleState("toggle7", Map("services"  -> "my-service "), activation(rollout(1))),
+    ToggleState("toggle8", Map("service"   -> " my-service"), activation(rollout(100))),
+    ToggleState("toggle9", Map("services"  -> "another-service,yet-another-service,my-service"), activation()),
     ToggleState("toggle10", Map("services" -> "another-service, my-service, yet-another-service"), activation())
   )
-
 
   "ToggleState.apply" should {
 
@@ -39,16 +46,21 @@ class ToggleStateSpec extends WordSpec with MustMatchers with MockitoSugar {
     "Adds AlwayOffCondition if only attribute contitions are given" in {
       val condition = toggles(2).condition
 
-      condition mustBe All(Set(AlwaysOffCondition, Attribute("culture", Seq("DE", "de-DE")), Attribute("version", Seq("1", "2"))))
+      condition mustBe All(
+        Set(AlwaysOffCondition, Attribute("culture", Seq("DE", "de-DE")), Attribute("version", Seq("1", "2")))
+      )
     }
 
     "transform combinations of rollout and attributes to conditions" in {
       val condition = toggles(3).condition
 
-      condition mustBe All(Set(
-        UuidDistributionCondition(List(1 to 30), UuidDistributionCondition.defaultUuidToIntProjection),
-        Attribute("culture", Seq("DE", "de-DE")),
-        Attribute("version", Seq("1", "2"))))
+      condition mustBe All(
+        Set(
+          UuidDistributionCondition(List(1 to 30), UuidDistributionCondition.defaultUuidToIntProjection),
+          Attribute("culture", Seq("DE", "de-DE")),
+          Attribute("version", Seq("1", "2"))
+        )
+      )
     }
   }
 
@@ -80,7 +92,7 @@ class ToggleStateSpec extends WordSpec with MustMatchers with MockitoSugar {
 
     "return toggle default conditions if toggle is unknown" in {
       val condition = mock[Condition]
-      val toggle = Toggle("toggle-3", condition)
+      val toggle    = Toggle("toggle-3", condition)
 
       activations.apply(toggle) mustBe condition
     }

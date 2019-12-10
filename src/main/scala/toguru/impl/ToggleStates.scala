@@ -14,12 +14,12 @@ object ToggleState {
     val condition: Condition = {
       val rollout = for {
         activation <- activations.headOption
-        rollout <- activation.rollout
+        rollout    <- activation.rollout
       } yield Condition.UuidRange(1 to rollout.percentage)
 
       val attributes = for {
         activation <- activations.headOption.to[Seq]
-        (k, v) <- activation.attributes
+        (k, v)     <- activation.attributes
       } yield Attribute(k, v)
 
       (attributes :+ rollout.getOrElse(Condition.Off)).to[List] match {
@@ -45,8 +45,7 @@ class ToggleStateActivations(toggleStates: ToggleStates) extends Activations {
   override def apply(): Traversable[ToggleState] = toggleStates.toggles
 
   override def togglesFor(service: String): Map[ToggleId, Condition] =
-    toggleStates
-      .toggles
+    toggleStates.toggles
       .filter { toggle =>
         toggle.tags.get("services").toVector.flatMap(_.split(",")).exists(_.trim == service) ||
         toggle.tags.get("service").exists(_.trim == service)

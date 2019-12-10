@@ -20,21 +20,24 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Must
 
   val toggleOne = Toggle("toggle-one")
   val toggleTwo = Toggle("toggle-two")
-  val executor = Executors.newSingleThreadScheduledExecutor()
+  val executor  = Executors.newSingleThreadScheduledExecutor()
 
   def poller(response: String, contentType: String = RemoteActivationsProvider.MimeApiV3): TogglePoller =
     _ => PollResponse(200, contentType, response)
 
   val circuitBreakerBuilder = CircuitBreakerBuilder(
     name = "test-breaker",
-    failLimit  = 1000,
+    failLimit = 1000,
     retryDelay = FiniteDuration(100, TimeUnit.MILLISECONDS)
   )
 
   def createProvider(poller: TogglePoller): RemoteActivationsProvider =
     new RemoteActivationsProvider(poller, executor, circuitBreakerBuilder = circuitBreakerBuilder).close()
 
-  def createProvider(response: String, contentType: String = RemoteActivationsProvider.MimeApiV3): RemoteActivationsProvider =
+  def createProvider(
+      response: String,
+      contentType: String = RemoteActivationsProvider.MimeApiV3
+  ): RemoteActivationsProvider =
     createProvider(poller(response, contentType))
 
   "Fetching features from toggle endpoint" should {
@@ -162,7 +165,7 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Must
 
     "fail if toggle endpoint returns 500" in {
       val poller: TogglePoller = _ => PollResponse(500, "", "")
-      val provider = createProvider(poller)
+      val provider             = createProvider(poller)
 
       provider.fetchToggleStates(None) mustBe None
 
@@ -181,7 +184,7 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Must
 
     "fail if poller throws exception" in {
       val poller: TogglePoller = _ => throw new RuntimeException("boom")
-      val provider = createProvider(poller)
+      val provider             = createProvider(poller)
 
       provider.fetchToggleStates(None) mustBe None
     }
@@ -198,18 +201,26 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Must
     def createProviderAndServer(service: HttpService) = {
 
       val port = freePort
-      (RemoteActivationsProvider(s"http://localhost:$port", pollInterval = 100.milliseconds, circuitBreakerBuilder = circuitBreakerBuilder),
-        BlazeBuilder.bindHttp(port, "localhost").mountService(service, "/togglestate").run)
+      (
+        RemoteActivationsProvider(
+          s"http://localhost:$port",
+          pollInterval = 100.milliseconds,
+          circuitBreakerBuilder = circuitBreakerBuilder
+        ),
+        BlazeBuilder.bindHttp(port, "localhost").mountService(service, "/togglestate").run
+      )
     }
 
     "poll remote url" in {
       val service = HttpService {
-        case _ => Ok(
-          """
-            |{
-            |  "sequenceNo": 10,
-            |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"rolloutPercentage":20}]
-            |}""".stripMargin)
+        case _ =>
+          Ok(
+            """
+              |{
+              |  "sequenceNo": 10,
+              |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"rolloutPercentage":20}]
+              |}""".stripMargin
+          )
       }
 
       val (provider, server) = createProviderAndServer(service)
@@ -254,18 +265,17 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Must
       val contentTypeV3 = `Content-Type`.parse(RemoteActivationsProvider.MimeApiV3).right.get
 
       val response =
-        Ok(
-          """
-            |{
-            |  "sequenceNo": 10,
-            |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"activations":[{"rollout":{"percentage":20}, "attributes":{}}]}]
-            |}""".stripMargin).withContentType(Some(contentTypeV3))
+        Ok("""
+             |{
+             |  "sequenceNo": 10,
+             |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"activations":[{"rollout":{"percentage":20}, "attributes":{}}]}]
+             |}""".stripMargin).withContentType(Some(contentTypeV3))
 
       var maybeSeqNo: Option[Long] = None
 
       val service = HttpService {
         case request =>
-          if(request.uri.params.isDefinedAt("seqNo"))
+          if (request.uri.params.isDefinedAt("seqNo"))
             maybeSeqNo = Some(request.uri.params("seqNo").toLong)
           response
       }
@@ -280,9 +290,6 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Must
     }
   }
 
-
-
-
   /**
     *
     * @param times how many times we want to try.
@@ -291,10 +298,10 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Must
     */
   def waitFor(times: Int, wait: FiniteDuration = 2.second)(test: => Boolean): Unit = {
     val success = (1 to times).exists { i =>
-      if(test) {
+      if (test) {
         true
       } else {
-        if(i < times)
+        if (i < times)
           Thread.sleep(wait.toMillis)
         false
       }
@@ -305,7 +312,7 @@ class RemoteActivationsProviderSpec extends WordSpec with OptionValues with Must
 
   def freePort: Int = {
     val socket = new ServerSocket(0)
-    val port = socket.getLocalPort
+    val port   = socket.getLocalPort
     socket.close()
     port
   }

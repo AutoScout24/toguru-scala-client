@@ -24,31 +24,32 @@ object RemoteActivationsProvider {
   type TogglePoller = (Option[Long]) => PollResponse
 
   val toggleStateReadsUntilV2: Reads[ToggleStates] = {
-    val toggleStateV1Reads = (
-      (JsPath \ "id").read[String] and
-      (JsPath \ "rolloutPercentage").readNullable[Int] and
-      (JsPath \ "tags").read[Map[String, String]]
-    )((id, p, tags) => ToggleState(id, tags, Seq(ToggleActivation(p.map(Rollout)))))
+    val toggleStateV1Reads = (JsPath \ "id")
+      .read[String]
+      .and((JsPath \ "rolloutPercentage").readNullable[Int])
+      .and((JsPath \ "tags").read[Map[String, String]])((id, p, tags) =>
+        ToggleState(id, tags, Seq(ToggleActivation(p.map(Rollout))))
+      )
 
     val toggleStatesV1Reads = Reads.seq(toggleStateV1Reads).map(ts => ToggleStates(None, ts))
 
-    val toggleStatesV2Reads = (
-        (JsPath \ "sequenceNo").read[Int] and
-        (JsPath \ "toggles").read(Reads.list(toggleStateV1Reads))
-      )((seqNo, toggles) => ToggleStates(Some(seqNo), toggles))
+    val toggleStatesV2Reads = (JsPath \ "sequenceNo")
+      .read[Int]
+      .and((JsPath \ "toggles").read(Reads.list(toggleStateV1Reads)))((seqNo, toggles) =>
+        ToggleStates(Some(seqNo), toggles)
+      )
 
-    toggleStatesV2Reads or toggleStatesV1Reads
+    toggleStatesV2Reads.or(toggleStatesV1Reads)
   }
 
   val toggleStateReads = {
-    implicit val rolloutReads = Json.reads[Rollout]
+    implicit val rolloutReads    = Json.reads[Rollout]
     implicit val activationReads = Json.reads[ToggleActivation]
 
-    implicit val toggleStateReads = (
-        (JsPath \ "id").read[String] and
-        (JsPath \ "activations").read[Seq[ToggleActivation]] and
-        (JsPath \ "tags").read[Map[String, String]]
-      )((id, acts, tags) => ToggleState(id, tags, acts))
+    implicit val toggleStateReads = (JsPath \ "id")
+      .read[String]
+      .and((JsPath \ "activations").read[Seq[ToggleActivation]])
+      .and((JsPath \ "tags").read[Map[String, String]])((id, acts, tags) => ToggleState(id, tags, acts))
 
     Json.reads[ToggleStates]
   }
@@ -58,7 +59,7 @@ object RemoteActivationsProvider {
 
   private val circuitBreakerBuilder = CircuitBreakerBuilder(
     name = "toguru-server-breaker",
-    failLimit  = 5,
+    failLimit = 5,
     retryDelay = FiniteDuration(20, TimeUnit.SECONDS)
   )
 
@@ -69,10 +70,15 @@ object RemoteActivationsProvider {
     * @param pollInterval the poll interval to use for querying the toguru server
     * @return
     */
-  def apply(endpointUrl: String, pollInterval: Duration = 2.seconds, circuitBreakerBuilder: CircuitBreakerBuilder = circuitBreakerBuilder): RemoteActivationsProvider = {
+  def apply(
+      endpointUrl: String,
+      pollInterval: Duration = 2.seconds,
+      circuitBreakerBuilder: CircuitBreakerBuilder = circuitBreakerBuilder
+  ): RemoteActivationsProvider = {
     val poller: TogglePoller = { maybeSeqNo =>
       val maybeSeqNoParam = maybeSeqNo.map(seqNo => s"?seqNo=$seqNo").mkString
-      val response = Http(endpointUrl + s"/togglestate$maybeSeqNoParam").header("Accept", MimeApiV3).timeout(500, 750).asString
+      val response =
+        Http(endpointUrl + s"/togglestate$maybeSeqNoParam").header("Accept", MimeApiV3).timeout(500, 750).asString
       PollResponse(response.code, response.contentType.getOrElse(""), response.body)
     }
 
@@ -89,11 +95,13 @@ object RemoteActivationsProvider {
   * @param circuitBreakerBuilder the circuit breaker builder to use for creating the circuit breaker.
   */
 class RemoteActivationsProvider(
-                                 poller: TogglePoller,
-                                 executor: ScheduledExecutorService,
-                                 val pollInterval: Duration = 2.seconds,
-                                 val circuitBreakerBuilder: CircuitBreakerBuilder = RemoteActivationsProvider.circuitBreakerBuilder)
-  extends Activations.Provider with ToguruClientMetrics with StrictLogging {
+    poller: TogglePoller,
+    executor: ScheduledExecutorService,
+    val pollInterval: Duration = 2.seconds,
+    val circuitBreakerBuilder: CircuitBreakerBuilder = RemoteActivationsProvider.circuitBreakerBuilder
+) extends Activations.Provider
+    with ToguruClientMetrics
+    with StrictLogging {
 
   val circuitBreaker = circuitBreakerBuilder.build()
 
@@ -119,9 +127,9 @@ class RemoteActivationsProvider(
   def fetchToggleStates(sequenceNo: Option[Long]): Option[ToggleStates] = {
 
     def sequenceNoValid(toggleStates: ToggleStates) = (sequenceNo, toggleStates.sequenceNo) match {
-      case (None, _) => true
+      case (None, _)          => true
       case (Some(a), Some(b)) => a <= b
-      case (Some(_), None) => false
+      case (Some(_), None)    => false
     }
 
     def parseBody(response: PollResponse): Try[ToggleStates] = {
@@ -142,7 +150,9 @@ class RemoteActivationsProvider(
             Some(toggleStates)
 
           case (200, Success(toggleStates)) =>
-            logger.warn(s"Server response contains stale state (sequenceNo. is '${toggleStates.sequenceNo.mkString}'), client sequenceNo is '${sequenceNo.mkString}'.")
+            logger.warn(
+              s"Server response contains stale state (sequenceNo. is '${toggleStates.sequenceNo.mkString}'), client sequenceNo is '${sequenceNo.mkString}'."
+            )
             fetchFailed()
             None
 

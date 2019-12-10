@@ -11,6 +11,6 @@ object ClientInfoHelper {
     * @return A function that forces `featureName` to be a particular state
     */
   def forceToggleTo(toggleId: ToggleId, enabled: Boolean): (ToggleId => Option[Boolean]) = { id =>
-    if(id == toggleId) Some(enabled) else None
+    if (id == toggleId) Some(enabled) else None
   }
 }

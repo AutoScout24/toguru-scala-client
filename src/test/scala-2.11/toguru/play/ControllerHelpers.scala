@@ -10,13 +10,11 @@ trait ControllerHelpers { this: RequestHelpers =>
   val toggle = Toggle("toggle-1")
 
   // you will write such a class in your play app to automatically convert from Play's RequestHeader to ClientInfo
-  abstract class ToggledController(toguru: PlayToguruClient)
-      extends Controller {
+  abstract class ToggledController(toguru: PlayToguruClient) extends Controller {
     val ToggledAction = PlaySupport.ToggledAction(toguru)
   }
 
-  class MyController @Inject()(toguru: PlayToguruClient)
-      extends ToggledController(toguru) {
+  class MyController @Inject() (toguru: PlayToguruClient) extends ToggledController(toguru) {
 
     def myAction = ToggledAction { implicit request =>
       if (toggle.isOn)
@@ -26,8 +24,7 @@ trait ControllerHelpers { this: RequestHelpers =>
     }
   }
 
-  class MyControllerWithOwnTogglingInfo @Inject()(toguru: PlayToguruClient)
-      extends Controller {
+  class MyControllerWithOwnTogglingInfo @Inject() (toguru: PlayToguruClient) extends Controller {
 
     def myAction = Action { request =>
       implicit val toggling = toguru(request)
@@ -39,19 +36,16 @@ trait ControllerHelpers { this: RequestHelpers =>
     }
   }
 
-  def createToggledController(
-      provider: Activations.Provider = TestActivations()()) = {
+  def createToggledController(provider: Activations.Provider = TestActivations()()) = {
 
     val toguruClient = PlaySupport.testToguruClient(client, provider)
 
     new ToggledController(toguruClient) {}
   }
 
-  def createMyController(toguru: PlayToguruClient) = {
+  def createMyController(toguru: PlayToguruClient) =
     new MyController(toguru)
-  }
 
-  def createMyControllerWithOwnTogglingInfo(toguru: PlayToguruClient) = {
+  def createMyControllerWithOwnTogglingInfo(toguru: PlayToguruClient) =
     new MyControllerWithOwnTogglingInfo(toguru)
-  }
 }

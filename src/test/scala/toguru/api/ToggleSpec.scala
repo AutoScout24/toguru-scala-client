@@ -9,7 +9,7 @@ class ToggleSpec extends FeatureSpec with MustMatchers {
 
   feature("Toggle creation") {
     scenario("default condition is false") {
-      val toggle1 = Toggle("toggle-1")
+      val toggle1             = Toggle("toggle-1")
       implicit val toggleInfo = emptyToggleInfo
 
       toggle1.isOn mustBe false
@@ -17,7 +17,7 @@ class ToggleSpec extends FeatureSpec with MustMatchers {
     }
 
     scenario("default condition is respected") {
-      val toggle1 = Toggle("toggle-1", default = Condition.On)
+      val toggle1             = Toggle("toggle-1", default = Condition.On)
       implicit val toggleInfo = emptyToggleInfo
 
       toggle1.isOn mustBe true

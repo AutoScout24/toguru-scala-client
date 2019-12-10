@@ -31,9 +31,7 @@ class ConditionSpec extends FeatureSpec with MustMatchers {
   feature("Combined Condition") {
     scenario("can be created") {
       import Condition._
-      Condition(
-        UuidRange(1 to 20),
-        Attribute("myAttribute", "one", "two", "three")) mustBe a[Condition]
+      Condition(UuidRange(1 to 20), Attribute("myAttribute", "one", "two", "three")) mustBe a[Condition]
     }
 
     scenario("when created from one condition yields the given condition") {

@@ -13,12 +13,14 @@ class ToguruClientSpec extends FeatureSpec with MustMatchers with MockitoSugar {
   def activationProvider(activations: Activations = DefaultActivations, health: Boolean): Activations.Provider =
     new Provider {
       def healthy() = health
-      def apply() = activations
+      def apply()   = activations
     }
 
-  def toguruClient(clientProvider: ClientInfo.Provider[String] = mockClientProvider, activations: Activations.Provider) =
+  def toguruClient(
+      clientProvider: ClientInfo.Provider[String] = mockClientProvider,
+      activations: Activations.Provider
+  ) =
     new ToguruClient(clientProvider, activations)
-
 
   feature("health check") {
     scenario("activations provider is healthy") {
@@ -36,11 +38,12 @@ class ToguruClientSpec extends FeatureSpec with MustMatchers with MockitoSugar {
 
   feature("client info provider") {
     scenario("client info requested") {
-      val myActivations = mock[Activations]
+      val myActivations      = mock[Activations]
       val myInfo: ClientInfo = ClientInfo().withAttribute("user", "me")
       val client = toguruClient(
         clientProvider = _ => myInfo,
-        activations = activationProvider(health = true, activations = myActivations))
+        activations = activationProvider(health = true, activations = myActivations)
+      )
 
       val toggling = client.apply("client")
 

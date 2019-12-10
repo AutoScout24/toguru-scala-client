@@ -66,8 +66,7 @@ object PlaySupport extends AbstractPlaySupport {
     * @param toguruClient the play toguru client to use
     * @return
     */
-  def ToggledAction(
-      toguruClient: PlayToguruClient): ActionBuilder[ToggledRequest] =
-    Action andThen new TogglingRefiner(toguruClient)
+  def ToggledAction(toguruClient: PlayToguruClient): ActionBuilder[ToggledRequest] =
+    Action.andThen(new TogglingRefiner(toguruClient))
 
 }
