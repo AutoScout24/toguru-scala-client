@@ -36,10 +36,8 @@ lazy val core = projectMatrix
     libraryDependencies ++= Seq(
       "org.scalaj"                 %% "scalaj-http"                 % "2.3.0",
       "com.typesafe.scala-logging" %% "scala-logging"               % "3.5.0",
-      "commons-io"                 % "commons-io"                   % "2.4",
       "io.dropwizard.metrics"      % "metrics-core"                 % "3.1.0",
       "org.komamitsu"              % "phi-accural-failure-detector" % "0.0.3",
-      "org.scalactic"              %% "scalactic"                   % "3.0.3",
       "com.hootsuite"              %% "scala-circuit-breaker"       % "1.0.2",
       "org.mockito"                % "mockito-core"                 % "2.0.8-beta" % "test",
       "org.scalatest"              %% "scalatest"                   % "3.0.3" % "test",
