@@ -16,15 +16,11 @@ addCommandAlias("formatCheck", "; scalafmtCheck; test:scalafmtCheck; scalafmtSbt
 
 lazy val root = project
   .in(file("."))
-  .aggregate(toguruScalaClient.projectRefs: _*)
-  .settings(
-    publish / skip := true,
-    Compile / sources := Nil,
-    Test / sources := Nil,
-  )
+  .aggregate(core.projectRefs: _*)
+  .settings(publish / skip := true)
 
-lazy val toguruScalaClient = projectMatrix
-  .in(file("."))
+lazy val core = projectMatrix
+  .in(file("core"))
   .enablePlugins(SemVerPlugin)
   .settings(
     name := "toguru-scala-client",
