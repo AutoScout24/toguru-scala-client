@@ -46,7 +46,7 @@ lazy val core = projectMatrix
     )
   )
   .jvmPlatform(
-    scalaVersions = Seq("2.12.3", "2.11.8"),
+    scalaVersions = Seq("2.12.10", "2.11.12"),
     settings = Seq(
       libraryDependencies ++= {
         val playVersion = scalaBinaryVersion.value match {
