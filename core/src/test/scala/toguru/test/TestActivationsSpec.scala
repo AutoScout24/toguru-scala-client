@@ -1,9 +1,10 @@
 package toguru.test
 
-import org.scalatest._
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import toguru.api._
 
-class TestActivationsSpec extends WordSpec with MustMatchers {
+class TestActivationsSpec extends AnyWordSpec with Matchers {
 
   "healthy" should {
     "always return true" in {

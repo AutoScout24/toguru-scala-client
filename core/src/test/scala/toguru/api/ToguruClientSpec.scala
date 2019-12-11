@@ -1,10 +1,11 @@
 package toguru.api
 
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FeatureSpec, _}
+import org.mockito.scalatest.IdiomaticMockito
+import org.scalatest.featurespec.AnyFeatureSpec
+import org.scalatest.matchers.must.Matchers
 import toguru.api.Activations.Provider
 
-class ToguruClientSpec extends FeatureSpec with MustMatchers with MockitoSugar {
+class ToguruClientSpec extends AnyFeatureSpec with Matchers with IdiomaticMockito {
 
   val mockClientInfo = ClientInfo()
 
@@ -22,22 +23,22 @@ class ToguruClientSpec extends FeatureSpec with MustMatchers with MockitoSugar {
   ) =
     new ToguruClient(clientProvider, activations)
 
-  feature("health check") {
-    scenario("activations provider is healthy") {
+  Feature("health check") {
+    Scenario("activations provider is healthy") {
       val client = toguruClient(activations = activationProvider(health = true))
 
       client.healthy() mustBe true
     }
 
-    scenario("activations provider is unhealthy") {
+    Scenario("activations provider is unhealthy") {
       val client = toguruClient(activations = activationProvider(health = false))
 
       client.healthy() mustBe false
     }
   }
 
-  feature("client info provider") {
-    scenario("client info requested") {
+  Feature("client info provider") {
+    Scenario("client info requested") {
       val myActivations      = mock[Activations]
       val myInfo: ClientInfo = ClientInfo().withAttribute("user", "me")
       val client = toguruClient(

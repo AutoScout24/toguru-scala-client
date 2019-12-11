@@ -1,10 +1,11 @@
 package toguru.impl
 
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{MustMatchers, WordSpec}
+import org.mockito.scalatest.IdiomaticMockito
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import toguru.api.{Condition, Toggle}
 
-class ToggleStateSpec extends WordSpec with MustMatchers with MockitoSugar {
+class ToggleStateSpec extends AnyWordSpec with Matchers with IdiomaticMockito {
 
   def activation(rollout: Option[Rollout] = None, attrs: Map[String, Seq[String]] = Map.empty) =
     Seq(ToggleActivation(rollout, attrs))

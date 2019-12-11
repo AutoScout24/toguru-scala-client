@@ -39,8 +39,8 @@ lazy val core = projectMatrix
       "io.dropwizard.metrics"      % "metrics-core"                 % "3.1.5",
       "org.komamitsu"              % "phi-accural-failure-detector" % "0.0.5",
       "com.hootsuite"              %% "scala-circuit-breaker"       % "1.0.5",
-      "org.mockito"                % "mockito-core"                 % "2.0.8-beta" % "test",
-      "org.scalatest"              %% "scalatest"                   % "3.0.3" % "test",
+      "org.mockito"                %% "mockito-scala-scalatest"     % "1.10.0" % "test",
+      "org.scalatest"              %% "scalatest"                   % "3.1.0" % "test",
       "org.http4s"                 %% "http4s-dsl"                  % "0.17.0-M3" % "test",
       "org.http4s"                 %% "http4s-blaze-server"         % "0.17.0-M3" % "test"
     )
@@ -56,7 +56,7 @@ lazy val core = projectMatrix
         Seq(
           "com.typesafe.play" %% "play-json" % playJsonVersion,
           "com.typesafe.play" %% "play"      % playVersion % "optional",
-          "com.typesafe.play" %% "play-test" % playVersion % "optional"
+          "com.typesafe.play" %% "play-test" % playVersion % "test"
         )
       }
     )

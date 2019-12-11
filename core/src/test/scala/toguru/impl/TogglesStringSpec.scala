@@ -1,10 +1,11 @@
 package toguru.impl
 
 import org.scalatest.OptionValues._
-import org.scalatest._
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import toguru.api._
 
-class TogglesStringSpec extends WordSpec with MustMatchers {
+class TogglesStringSpec extends AnyWordSpec with Matchers {
 
   "Parsing of forced features string" should {
 

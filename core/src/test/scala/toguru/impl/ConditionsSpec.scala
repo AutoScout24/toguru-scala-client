@@ -2,10 +2,11 @@ package toguru.impl
 
 import java.util.UUID
 
-import org.scalatest.{MustMatchers, WordSpec}
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import toguru.api.ClientInfo
 
-class ConditionsSpec extends WordSpec with MustMatchers {
+class ConditionsSpec extends AnyWordSpec with Matchers {
 
   "Attribute conditions" should {
     "apply correctly to de-DE culture" in {

@@ -9,14 +9,16 @@ import org.http4s.dsl._
 import org.http4s.headers._
 import org.http4s.server.blaze.BlazeBuilder
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{MustMatchers, OptionValues, WordSpec}
+import org.mockito.scalatest.IdiomaticMockito
+import org.scalatest.OptionValues
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import toguru.api.{Condition, DefaultActivations, Toggle}
 import toguru.impl.RemoteActivationsProvider.{PollResponse, TogglePoller}
 
 import scala.concurrent.duration.{FiniteDuration, _}
 
-class RemoteActivationsProviderSpec extends WordSpec with OptionValues with MustMatchers with MockitoSugar {
+class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with Matchers with IdiomaticMockito {
 
   val toggleOne = Toggle("toggle-one")
   val toggleTwo = Toggle("toggle-two")

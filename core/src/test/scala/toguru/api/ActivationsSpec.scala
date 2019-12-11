@@ -1,13 +1,14 @@
 package toguru.api
 
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FeatureSpec, MustMatchers}
+import org.mockito.scalatest.IdiomaticMockito
+import org.scalatest.featurespec.AnyFeatureSpec
+import org.scalatest.matchers.must.Matchers
 import toguru.impl.RemoteActivationsProvider
 
-class ActivationsSpec extends FeatureSpec with MustMatchers with MockitoSugar {
+class ActivationsSpec extends AnyFeatureSpec with Matchers with IdiomaticMockito {
 
-  feature("Remote activations provider") {
-    scenario("can be created") {
+  Feature("Remote activations provider") {
+    Scenario("can be created") {
       val provider = Activations.fromEndpoint("http://localhost:9000/togglestates")
 
       provider mustBe a[RemoteActivationsProvider]
@@ -15,19 +16,19 @@ class ActivationsSpec extends FeatureSpec with MustMatchers with MockitoSugar {
     }
   }
 
-  feature("Default activations") {
-    scenario("return toggle's default activation") {
+  Feature("Default activations") {
+    Scenario("return toggle's default activation") {
       val condition = mock[Condition]
       val toggle    = Toggle("toggle-1", condition)
 
       DefaultActivations.apply(toggle) mustBe condition
     }
 
-    scenario("return empty service toggles") {
+    Scenario("return empty service toggles") {
       DefaultActivations.togglesFor("my-service") mustBe Map.empty
     }
 
-    scenario("return None for sequenceNo") {
+    Scenario("return None for sequenceNo") {
       DefaultActivations.stateSequenceNo mustBe None
     }
   }

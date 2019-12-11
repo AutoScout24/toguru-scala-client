@@ -2,11 +2,12 @@ package toguru.impl
 
 import java.util.UUID
 
+import org.scalatest.matchers.must.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.{MustMatchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
 import toguru.api.ClientInfo
 
-class UuidDistributionConditionSpec extends WordSpec with MustMatchers with TableDrivenPropertyChecks {
+class UuidDistributionConditionSpec extends AnyWordSpec with Matchers with TableDrivenPropertyChecks {
 
   "Invalid ranges" should {
     "Lower boundary is too low" in {

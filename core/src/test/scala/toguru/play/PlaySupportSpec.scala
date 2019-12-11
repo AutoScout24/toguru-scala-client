@@ -4,7 +4,8 @@ import java.util.UUID
 
 import akka.util.Timeout
 import org.scalatest.OptionValues._
-import org.scalatest.{MustMatchers, WordSpec}
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import play.api.http.HttpVerbs
 import play.api.test.{FakeRequest, Helpers}
 import toguru.api._
@@ -14,7 +15,7 @@ import toguru.test.TestActivations
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 
-class PlaySupportSpec extends WordSpec with MustMatchers with RequestHelpers with ControllerHelpers {
+class PlaySupportSpec extends AnyWordSpec with Matchers with RequestHelpers with ControllerHelpers {
 
   "toguruClient method" should {
     "create a PlayToguruClient" in {
