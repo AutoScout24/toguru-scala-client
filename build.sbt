@@ -36,9 +36,9 @@ lazy val core = projectMatrix
     libraryDependencies ++= Seq(
       "org.scalaj"                 %% "scalaj-http"                 % "2.3.0",
       "com.typesafe.scala-logging" %% "scala-logging"               % "3.5.0",
-      "io.dropwizard.metrics"      % "metrics-core"                 % "3.1.0",
-      "org.komamitsu"              % "phi-accural-failure-detector" % "0.0.3",
-      "com.hootsuite"              %% "scala-circuit-breaker"       % "1.0.2",
+      "io.dropwizard.metrics"      % "metrics-core"                 % "3.1.5",
+      "org.komamitsu"              % "phi-accural-failure-detector" % "0.0.5",
+      "com.hootsuite"              %% "scala-circuit-breaker"       % "1.0.5",
       "org.mockito"                % "mockito-core"                 % "2.0.8-beta" % "test",
       "org.scalatest"              %% "scalatest"                   % "3.0.3" % "test",
       "org.http4s"                 %% "http4s-dsl"                  % "0.17.0-M3" % "test",
@@ -49,12 +49,12 @@ lazy val core = projectMatrix
     scalaVersions = Seq("2.12.10", "2.11.12"),
     settings = Seq(
       libraryDependencies ++= {
-        val playVersion = scalaBinaryVersion.value match {
-          case "2.12" => "2.6.1"
-          case "2.11" => "2.5.4"
+        val (playVersion, playJsonVersion) = scalaBinaryVersion.value match {
+          case "2.12" => ("2.6.25", "2.6.14")
+          case "2.11" => ("2.5.19", "2.5.19")
         }
         Seq(
-          "com.typesafe.play" %% "play-json" % playVersion,
+          "com.typesafe.play" %% "play-json" % playJsonVersion,
           "com.typesafe.play" %% "play"      % playVersion % "optional",
           "com.typesafe.play" %% "play-test" % playVersion % "optional"
         )
