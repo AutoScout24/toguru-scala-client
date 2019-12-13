@@ -1,19 +1,20 @@
 package toguru.impl
 
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
+import java.util.concurrent.{Executors, ScheduledExecutorService, ScheduledFuture, TimeUnit}
 
-import com.hootsuite.circuitbreaker.CircuitBreakerBuilder
+import com.hootsuite.circuitbreaker.{CircuitBreaker, CircuitBreakerBuilder}
 import com.typesafe.scalalogging.StrictLogging
+import org.komamitsu.failuredetector.PhiAccuralFailureDetector
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
+import scalaj.http.Http
 import toguru.api.{Activations, DefaultActivations}
 import toguru.impl.RemoteActivationsProvider._
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import scalaj.http.Http
 
 object RemoteActivationsProvider {
 
@@ -100,12 +101,26 @@ class RemoteActivationsProvider(
     val pollInterval: Duration = 2.seconds,
     val circuitBreakerBuilder: CircuitBreakerBuilder = RemoteActivationsProvider.circuitBreakerBuilder
 ) extends Activations.Provider
-    with ToguruClientMetrics
     with StrictLogging {
 
-  val circuitBreaker = circuitBreakerBuilder.build()
+  val circuitBreaker: CircuitBreaker = circuitBreakerBuilder.build()
 
-  val schedule = executor.scheduleAtFixedRate(new Runnable() {
+  val connectivity: PhiAccuralFailureDetector = {
+    val builder = new PhiAccuralFailureDetector.Builder()
+
+    builder.setThreshold(16)
+    builder.setMaxSampleSize(200)
+    builder.setAcceptableHeartbeatPauseMillis(pollInterval.toMillis)
+    builder.setFirstHeartbeatEstimateMillis(pollInterval.toMillis)
+    builder.setMinStdDeviationMillis(100)
+
+    builder.build()
+  }
+
+  // this heartbeat call is needed to kickoff phi computation
+  connectivity.heartbeat()
+
+  val schedule: ScheduledFuture[_] = executor.scheduleAtFixedRate(new Runnable() {
     def run(): Unit = update()
   }, pollInterval.toMillis, pollInterval.toMillis, TimeUnit.MILLISECONDS)
 
@@ -120,7 +135,6 @@ class RemoteActivationsProvider(
 
   def close(): RemoteActivationsProvider = {
     schedule.cancel(true)
-    deregister()
     this
   }
 
@@ -153,22 +167,21 @@ class RemoteActivationsProvider(
             logger.warn(
               s"Server response contains stale state (sequenceNo. is '${toggleStates.sequenceNo.mkString}'), client sequenceNo is '${sequenceNo.mkString}'."
             )
-            fetchFailed()
             None
 
           case _ =>
             logger.warn(s"Polling registry failed, got response code $code and body '$body'")
-            fetchFailed()
             None
         }
       case Failure(e) =>
         logger.warn(s"Polling registry failed (${e.getClass.getName}: ${e.getMessage})")
-        connectError()
         None
     }
   }
 
-  override def apply() = currentActivation.get()
+  def fetchSuccess(): Unit = connectivity.heartbeat()
 
-  override def currentSequenceNo: Option[Long] = apply().stateSequenceNo
+  def healthy(): Boolean = connectivity.isAvailable()
+
+  override def apply() = currentActivation.get()
 }
