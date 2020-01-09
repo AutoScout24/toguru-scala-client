@@ -36,14 +36,12 @@ lazy val core = projectMatrix
       "130"
     ),
     libraryDependencies ++= Seq(
-      "org.scalaj"                 %% "scalaj-http"                 % "2.3.0",
-      "com.typesafe.scala-logging" %% "scala-logging"               % "3.5.0",
-      "org.komamitsu"              % "phi-accural-failure-detector" % "0.0.5",
-      "com.hootsuite"              %% "scala-circuit-breaker"       % "1.0.5",
-      "org.mockito"                %% "mockito-scala-scalatest"     % "1.10.0" % "test",
-      "org.scalatest"              %% "scalatest"                   % "3.1.0" % "test",
-      "org.http4s"                 %% "http4s-dsl"                  % "0.17.0-M3" % "test",
-      "org.http4s"                 %% "http4s-blaze-server"         % "0.17.0-M3" % "test"
+      "com.softwaremill.sttp.client" %% "core"                        % "2.0.0-RC6",
+      "com.typesafe.scala-logging"   %% "scala-logging"               % "3.5.0",
+      "org.komamitsu"                % "phi-accural-failure-detector" % "0.0.5",
+      "com.hootsuite"                %% "scala-circuit-breaker"       % "1.0.5",
+      "org.mockito"                  %% "mockito-scala-scalatest"     % "1.10.0" % "test",
+      "org.scalatest"                %% "scalatest"                   % "3.1.0" % "test"
     )
   )
   .jvmPlatform(

@@ -1,18 +1,16 @@
 package toguru.impl
 
-import java.net.ServerSocket
 import java.util.concurrent.{Executors, TimeUnit}
 
 import com.hootsuite.circuitbreaker.CircuitBreakerBuilder
-import org.http4s._
-import org.http4s.dsl._
-import org.http4s.headers._
-import org.http4s.server.blaze.BlazeBuilder
 import org.mockito.Mockito._
 import org.mockito.scalatest.IdiomaticMockito
 import org.scalatest.OptionValues
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import sttp.client.testing.SttpBackendStub
+import sttp.client.{Identity, Response}
+import sttp.model.{Header, MediaType}
 import toguru.api.{Condition, DefaultActivations, Toggle}
 import toguru.impl.RemoteActivationsProvider.{PollResponse, TogglePoller}
 
@@ -41,6 +39,15 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
       contentType: String = RemoteActivationsProvider.MimeApiV3
   ): RemoteActivationsProvider =
     createProvider(poller(response, contentType))
+
+  def createProvider(
+      backend: SttpBackendStub[Identity, Nothing]
+  ): RemoteActivationsProvider =
+    RemoteActivationsProvider(
+      s"http://localhost:80",
+      pollInterval = 100.milliseconds,
+      circuitBreakerBuilder = circuitBreakerBuilder
+    )(backend)
 
   "Fetching features from toggle endpoint" should {
 
@@ -200,32 +207,18 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
   }
 
   "Created activation provider" should {
-    def createProviderAndServer(service: HttpService) = {
-
-      val port = freePort
-      (
-        RemoteActivationsProvider(
-          s"http://localhost:$port",
-          pollInterval = 100.milliseconds,
-          circuitBreakerBuilder = circuitBreakerBuilder
-        ),
-        BlazeBuilder.bindHttp(port, "localhost").mountService(service, "/togglestate").run
-      )
-    }
 
     "poll remote url" in {
-      val service = HttpService {
-        case _ =>
-          Ok(
-            """
-              |{
-              |  "sequenceNo": 10,
-              |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"rolloutPercentage":20}]
-              |}""".stripMargin
-          )
-      }
+      val stub = SttpBackendStub.synchronous.whenAnyRequest.thenRespond(
+        """
+          |{
+          |  "sequenceNo": 10,
+          |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"rolloutPercentage":20}]
+          |}
+       """.stripMargin
+      )
 
-      val (provider, server) = createProviderAndServer(service)
+      val provider = createProvider(stub)
 
       val rolloutCondition = Condition.UuidRange(1 to 20)
 
@@ -234,7 +227,6 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
       }
 
       provider.close()
-      server.shutdownNow()
 
       val activations = provider.apply()
 
@@ -245,50 +237,47 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
     "sends accept header when polling remote url" in {
 
       var acceptHeader: Option[String] = None
-      val service = HttpService {
-        case request =>
-          acceptHeader = request.headers.get(Accept).map(_.value)
-          Ok("""{ "sequenceNo": 10, "toggles": [] }""")
-      }
-
-      val (provider, server) = createProviderAndServer(service)
+      val stub =
+        SttpBackendStub.synchronous.whenAnyRequest.thenRespondWrapped { req =>
+          acceptHeader = req.headers
+            .find(_.name == "Accept")
+            .map(_.value)
+          Response.ok("""{ "sequenceNo": 10, "toggles": [] }""")
+        }
+      val provider = createProvider(stub)
 
       waitFor(100, 100.millis) {
         acceptHeader.isDefined
       }
 
       provider.close()
-      server.shutdownNow()
 
       acceptHeader mustBe Some(RemoteActivationsProvider.MimeApiV3)
     }
 
     "poll remote url with sequenceNo" in {
-      val contentTypeV3 = `Content-Type`.parse(RemoteActivationsProvider.MimeApiV3).right.get
+      var maybeSeqNo: Option[String] = None
+      val stub =
+        SttpBackendStub.synchronous.whenAnyRequest.thenRespondWrapped { req =>
+          maybeSeqNo = req.uri.paramsMap.get("seqNo")
+          Response
+            .ok(
+              """
+                |{
+                |  "sequenceNo": 10,
+                |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"activations":[{"rollout":{"percentage":20}, "attributes":{}}]}]
+                |}""".stripMargin
+            )
+            .copy(headers = List(Header.contentType(MediaType.parse(RemoteActivationsProvider.MimeApiV3).right.get)))
+        }
 
-      val response =
-        Ok("""
-             |{
-             |  "sequenceNo": 10,
-             |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"activations":[{"rollout":{"percentage":20}, "attributes":{}}]}]
-             |}""".stripMargin).withContentType(Some(contentTypeV3))
-
-      var maybeSeqNo: Option[Long] = None
-
-      val service = HttpService {
-        case request =>
-          if (request.uri.params.isDefinedAt("seqNo"))
-            maybeSeqNo = Some(request.uri.params("seqNo").toLong)
-          response
-      }
-      val (provider, server) = createProviderAndServer(service)
+      val provider = createProvider(stub)
 
       waitFor(100, 100.millis) { maybeSeqNo.isDefined }
 
       provider.close()
-      server.shutdownNow()
 
-      maybeSeqNo mustBe Some(10)
+      maybeSeqNo mustBe Some("10")
     }
   }
 
@@ -312,10 +301,4 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
     success mustBe true
   }
 
-  def freePort: Int = {
-    val socket = new ServerSocket(0)
-    val port   = socket.getLocalPort
-    socket.close()
-    port
-  }
 }

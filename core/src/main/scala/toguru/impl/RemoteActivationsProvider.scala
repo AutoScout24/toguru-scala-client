@@ -9,7 +9,8 @@ import org.komamitsu.failuredetector.PhiAccuralFailureDetector
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
-import scalaj.http.Http
+import sttp.client._
+import sttp.model.Header
 import toguru.api.{Activations, DefaultActivations}
 import toguru.impl.RemoteActivationsProvider._
 
@@ -75,14 +76,21 @@ object RemoteActivationsProvider {
       endpointUrl: String,
       pollInterval: Duration = 2.seconds,
       circuitBreakerBuilder: CircuitBreakerBuilder = circuitBreakerBuilder
+  )(
+      implicit sttpBackend: SttpBackend[Identity, Nothing, NothingT] = HttpURLConnectionBackend()
   ): RemoteActivationsProvider = {
     val poller: TogglePoller = { maybeSeqNo =>
-      val maybeSeqNoParam = maybeSeqNo.map(seqNo => s"?seqNo=$seqNo").mkString
-      val response =
-        Http(endpointUrl + s"/togglestate$maybeSeqNoParam").header("Accept", MimeApiV3).timeout(500, 750).asString
-      PollResponse(response.code, response.contentType.getOrElse(""), response.body)
+      val requestUri = maybeSeqNo match {
+        case Some(seqNo) => uri"$endpointUrl/togglestate?seqNo=$seqNo"
+        case None        => uri"$endpointUrl/togglestate"
+      }
+      val response = quickRequest
+        .headers(Header.accept(MimeApiV3))
+        .readTimeout(750.millis)
+        .get(requestUri)
+        .send()
+      PollResponse(response.code.code, response.contentType.getOrElse(""), response.body)
     }
-
     new RemoteActivationsProvider(poller, executor, pollInterval, circuitBreakerBuilder)
   }
 }
