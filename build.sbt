@@ -39,9 +39,10 @@ lazy val core = projectMatrix
       "com.softwaremill.sttp.client" %% "core"                        % "2.0.0-RC6",
       "org.slf4j"                    % "slf4j-api"                    % "1.7.30",
       "org.komamitsu"                % "phi-accural-failure-detector" % "0.0.5",
-      "com.hootsuite"                %% "scala-circuit-breaker"       % "1.0.5",
+      "net.jodah"                    % "failsafe"                     % "2.3.1",
       "org.mockito"                  %% "mockito-scala-scalatest"     % "1.10.0" % "test",
-      "org.scalatest"                %% "scalatest"                   % "3.1.0" % "test"
+      "org.scalatest"                %% "scalatest"                   % "3.1.0" % "test",
+      "org.slf4j"                    % "slf4j-nop"                    % "1.7.30" % "test"
     )
   )
   .jvmPlatform(

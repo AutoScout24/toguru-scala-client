@@ -1,8 +1,8 @@
 package toguru.impl
 
-import java.util.concurrent.{Executors, TimeUnit}
+import java.util.concurrent.Executors
 
-import com.hootsuite.circuitbreaker.CircuitBreakerBuilder
+import net.jodah.failsafe.CircuitBreaker
 import org.mockito.Mockito._
 import org.mockito.scalatest.IdiomaticMockito
 import org.scalatest.OptionValues
@@ -25,14 +25,11 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
   def poller(response: String, contentType: String = RemoteActivationsProvider.MimeApiV3): TogglePoller =
     _ => PollResponse(200, contentType, response)
 
-  val circuitBreakerBuilder = CircuitBreakerBuilder(
-    name = "test-breaker",
-    failLimit = 1000,
-    retryDelay = FiniteDuration(100, TimeUnit.MILLISECONDS)
-  )
+  def createCircuitBreaker(): CircuitBreaker[Any] =
+    new CircuitBreaker[Any]().withFailureThreshold(1000).withDelay(java.time.Duration.ofMillis(100))
 
   def createProvider(poller: TogglePoller): RemoteActivationsProvider =
-    new RemoteActivationsProvider(poller, executor, circuitBreakerBuilder = circuitBreakerBuilder).close()
+    new RemoteActivationsProvider(poller, executor, circuitBreakerBuilder = createCircuitBreaker).close()
 
   def createProvider(
       response: String,
@@ -46,7 +43,7 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
     RemoteActivationsProvider(
       s"http://localhost:80",
       pollInterval = 100.milliseconds,
-      circuitBreakerBuilder = circuitBreakerBuilder
+      circuitBreakerBuilder = createCircuitBreaker
     )(backend)
 
   "Fetching features from toggle endpoint" should {

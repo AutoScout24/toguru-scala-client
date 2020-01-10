@@ -3,7 +3,7 @@ package toguru.impl
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{Executors, ScheduledExecutorService, ScheduledFuture, TimeUnit}
 
-import com.hootsuite.circuitbreaker.{CircuitBreaker, CircuitBreakerBuilder}
+import net.jodah.failsafe.CircuitBreaker
 import org.komamitsu.failuredetector.PhiAccuralFailureDetector
 import org.slf4j.LoggerFactory
 import play.api.libs.functional.syntax._
@@ -15,7 +15,8 @@ import toguru.api.{Activations, DefaultActivations}
 import toguru.impl.RemoteActivationsProvider._
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
+import scala.util.control.NonFatal
+import scala.util.{Success, Try}
 
 object RemoteActivationsProvider {
 
@@ -59,11 +60,10 @@ object RemoteActivationsProvider {
   val executor = Executors.newScheduledThreadPool(1)
   sys.addShutdownHook(executor.shutdownNow())
 
-  private val circuitBreakerBuilder = CircuitBreakerBuilder(
-    name = "toguru-server-breaker",
-    failLimit = 5,
-    retryDelay = FiniteDuration(20, TimeUnit.SECONDS)
-  )
+  private def createCircuitBreaker(): CircuitBreaker[Any] =
+    new CircuitBreaker[Any]()
+      .withFailureThreshold(5)
+      .withDelay(java.time.Duration.ofSeconds(20))
 
   /**
     * Create an activation provider that fetches the toggle activations conditions from the toguru server given.
@@ -75,7 +75,7 @@ object RemoteActivationsProvider {
   def apply(
       endpointUrl: String,
       pollInterval: Duration = 2.seconds,
-      circuitBreakerBuilder: CircuitBreakerBuilder = circuitBreakerBuilder
+      circuitBreakerBuilder: () => CircuitBreaker[Any] = createCircuitBreaker
   )(
       implicit sttpBackend: SttpBackend[Identity, Nothing, NothingT] = HttpURLConnectionBackend()
   ): RemoteActivationsProvider = {
@@ -107,12 +107,12 @@ class RemoteActivationsProvider(
     poller: TogglePoller,
     executor: ScheduledExecutorService,
     val pollInterval: Duration = 2.seconds,
-    val circuitBreakerBuilder: CircuitBreakerBuilder = RemoteActivationsProvider.circuitBreakerBuilder
+    circuitBreakerBuilder: () => CircuitBreaker[Any] = RemoteActivationsProvider.createCircuitBreaker
 ) extends Activations.Provider {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val circuitBreaker: CircuitBreaker = circuitBreakerBuilder.build()
+  val circuitBreaker: CircuitBreaker[Any] = circuitBreakerBuilder()
 
   val connectivity: PhiAccuralFailureDetector = {
     val builder = new PhiAccuralFailureDetector.Builder()
@@ -164,39 +164,47 @@ class RemoteActivationsProvider(
       Try(Json.parse(response.content).as(reads))
     }
 
-    Try(circuitBreaker() { poller(sequenceNo) }) match {
-      case Success(r @ PollResponse(code, _, body)) =>
-        val tryToggleStates = parseBody(r)
-        (code, tryToggleStates) match {
+    if (circuitBreaker.allowsExecution()) {
+      try {
+        circuitBreaker.preExecute()
+        val pollResponse    = poller(sequenceNo)
+        val tryToggleStates = parseBody(pollResponse)
+        (pollResponse.code, tryToggleStates) match {
           case (200, Success(toggleStates)) if sequenceNoValid(toggleStates) =>
+            circuitBreaker.recordSuccess()
             fetchSuccess()
             Some(toggleStates)
-
           case (200, Success(toggleStates)) =>
+            circuitBreaker.recordSuccess()
             if (logger.isWarnEnabled) {
               logger.warn(
                 s"Server response contains stale state (sequenceNo. is '${toggleStates.sequenceNo.mkString}'), client sequenceNo is '${sequenceNo.mkString}'."
               )
             }
             None
-
           case _ =>
+            circuitBreaker.recordFailure()
             if (logger.isWarnEnabled) {
-              logger.warn(s"Polling registry failed, got response code $code and body '$body'")
+              logger.warn(
+                s"Polling registry failed, got response code ${pollResponse.code} and body '${pollResponse.content}'"
+              )
             }
             None
         }
-      case Failure(e) =>
-        if (logger.isWarnEnabled) {
-          logger.warn(s"Polling registry failed (${e.getClass.getName}: ${e.getMessage})")
-        }
-        None
-    }
+      } catch {
+        case NonFatal(e) =>
+          circuitBreaker.recordFailure(e)
+          if (logger.isWarnEnabled) {
+            logger.warn(s"Polling registry failed (${e.getClass.getName}: ${e.getMessage})")
+          }
+          None
+      }
+    } else None
   }
 
   def fetchSuccess(): Unit = connectivity.heartbeat()
 
   def healthy(): Boolean = connectivity.isAvailable()
 
-  override def apply() = currentActivation.get()
+  override def apply(): Activations = currentActivation.get()
 }
