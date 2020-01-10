@@ -4,8 +4,8 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{Executors, ScheduledExecutorService, ScheduledFuture, TimeUnit}
 
 import com.hootsuite.circuitbreaker.{CircuitBreaker, CircuitBreakerBuilder}
-import com.typesafe.scalalogging.StrictLogging
 import org.komamitsu.failuredetector.PhiAccuralFailureDetector
+import org.slf4j.LoggerFactory
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
@@ -108,8 +108,9 @@ class RemoteActivationsProvider(
     executor: ScheduledExecutorService,
     val pollInterval: Duration = 2.seconds,
     val circuitBreakerBuilder: CircuitBreakerBuilder = RemoteActivationsProvider.circuitBreakerBuilder
-) extends Activations.Provider
-    with StrictLogging {
+) extends Activations.Provider {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   val circuitBreaker: CircuitBreaker = circuitBreakerBuilder.build()
 
@@ -172,17 +173,23 @@ class RemoteActivationsProvider(
             Some(toggleStates)
 
           case (200, Success(toggleStates)) =>
-            logger.warn(
-              s"Server response contains stale state (sequenceNo. is '${toggleStates.sequenceNo.mkString}'), client sequenceNo is '${sequenceNo.mkString}'."
-            )
+            if (logger.isWarnEnabled) {
+              logger.warn(
+                s"Server response contains stale state (sequenceNo. is '${toggleStates.sequenceNo.mkString}'), client sequenceNo is '${sequenceNo.mkString}'."
+              )
+            }
             None
 
           case _ =>
-            logger.warn(s"Polling registry failed, got response code $code and body '$body'")
+            if (logger.isWarnEnabled) {
+              logger.warn(s"Polling registry failed, got response code $code and body '$body'")
+            }
             None
         }
       case Failure(e) =>
-        logger.warn(s"Polling registry failed (${e.getClass.getName}: ${e.getMessage})")
+        if (logger.isWarnEnabled) {
+          logger.warn(s"Polling registry failed (${e.getClass.getName}: ${e.getMessage})")
+        }
         None
     }
   }
