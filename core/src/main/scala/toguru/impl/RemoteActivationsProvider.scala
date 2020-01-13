@@ -3,12 +3,11 @@ package toguru.impl
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{Executors, ScheduledExecutorService, ScheduledFuture, TimeUnit}
 
+import io.circe.Decoder.Result
+import io.circe.{parser, Decoder, HCursor}
 import net.jodah.failsafe.CircuitBreaker
 import org.komamitsu.failuredetector.PhiAccuralFailureDetector
 import org.slf4j.LoggerFactory
-import play.api.libs.functional.syntax._
-import play.api.libs.json.Reads._
-import play.api.libs.json._
 import sttp.client._
 import sttp.model.Header
 import toguru.api.{Activations, DefaultActivations}
@@ -16,7 +15,7 @@ import toguru.impl.RemoteActivationsProvider._
 
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 object RemoteActivationsProvider {
 
@@ -24,37 +23,34 @@ object RemoteActivationsProvider {
 
   case class PollResponse(code: Int, contentType: String, content: String)
 
-  type TogglePoller = (Option[Long]) => PollResponse
+  type TogglePoller = Option[Long] => PollResponse
 
-  val toggleStateReadsUntilV2: Reads[ToggleStates] = {
-    val toggleStateV1Reads = (JsPath \ "id")
-      .read[String]
-      .and((JsPath \ "rolloutPercentage").readNullable[Int])
-      .and((JsPath \ "tags").read[Map[String, String]])((id, p, tags) =>
-        ToggleState(id, tags, Seq(ToggleActivation(p.map(Rollout))))
-      )
-
-    val toggleStatesV1Reads = Reads.seq(toggleStateV1Reads).map(ts => ToggleStates(None, ts))
-
-    val toggleStatesV2Reads = (JsPath \ "sequenceNo")
-      .read[Int]
-      .and((JsPath \ "toggles").read(Reads.list(toggleStateV1Reads)))((seqNo, toggles) =>
-        ToggleStates(Some(seqNo), toggles)
-      )
-
-    toggleStatesV2Reads.or(toggleStatesV1Reads)
-  }
-
-  val toggleStateReads = {
-    implicit val rolloutReads    = Json.reads[Rollout]
-    implicit val activationReads = Json.reads[ToggleActivation]
-
-    implicit val toggleStateReads = (JsPath \ "id")
-      .read[String]
-      .and((JsPath \ "activations").read[Seq[ToggleActivation]])
-      .and((JsPath \ "tags").read[Map[String, String]])((id, acts, tags) => ToggleState(id, tags, acts))
-
-    Json.reads[ToggleStates]
+  private val toggleStatesCirceDecoder: Decoder[ToggleStates] = {
+    implicit val rolloutCirceDecoder: Decoder[Rollout] = new Decoder[Rollout] {
+      override def apply(c: HCursor): Result[Rollout] = c.downField("percentage").as[Int].map(Rollout.apply)
+    }
+    implicit val toggleActivationCirceDecoder: Decoder[ToggleActivation] = new Decoder[ToggleActivation] {
+      override def apply(c: HCursor): Result[ToggleActivation] =
+        for {
+          rollout    <- c.downField("rollout").as[Option[Rollout]]
+          attributes <- c.downField("attributes").as[Option[Map[String, Seq[String]]]]
+        } yield ToggleActivation(rollout, attributes.getOrElse(Map.empty))
+    }
+    implicit val toggleStateCirceDecoder: Decoder[ToggleState] = new Decoder[ToggleState] {
+      override def apply(c: HCursor): Result[ToggleState] =
+        for {
+          id          <- c.downField("id").as[String]
+          tags        <- c.downField("tags").as[Map[String, String]]
+          activations <- c.downField("activations").as[Seq[ToggleActivation]]
+        } yield ToggleState(id, tags, activations)
+    }
+    new Decoder[ToggleStates] {
+      override def apply(c: HCursor): Result[ToggleStates] =
+        for {
+          sequenceNo <- c.downField("sequenceNo").as[Int]
+          toggles    <- c.downField("toggles").as[Seq[ToggleState]]
+        } yield ToggleStates(Some(sequenceNo), toggles)
+    }
   }
 
   val executor = Executors.newScheduledThreadPool(1)
@@ -155,14 +151,11 @@ class RemoteActivationsProvider(
       case (Some(_), None)    => false
     }
 
-    def parseBody(response: PollResponse): Try[ToggleStates] = {
-      val reads = response.contentType match {
-        case MimeApiV3 => toggleStateReads
-        case _         => toggleStateReadsUntilV2
+    def parseBody(response: PollResponse): Try[ToggleStates] =
+      response.contentType match {
+        case MimeApiV3 => parser.decode(response.content)(toggleStatesCirceDecoder).toTry
+        case other     => Failure(new IllegalArgumentException(s"Invalid content type: $other"))
       }
-
-      Try(Json.parse(response.content).as(reads))
-    }
 
     if (circuitBreaker.allowsExecution()) {
       try {

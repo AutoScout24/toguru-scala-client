@@ -30,6 +30,7 @@ object ToggleState {
 
     new ToggleState(id, tags, condition)
   }
+
 }
 
 case class ToggleActivation(rollout: Option[Rollout] = None, attributes: Map[String, Seq[String]] = Map.empty)

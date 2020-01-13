@@ -49,13 +49,14 @@ lazy val core = projectMatrix
     scalaVersions = Seq("2.12.10"),
     settings = Seq(
       libraryDependencies ++= {
-        val (playVersion, playJsonVersion) = scalaBinaryVersion.value match {
-          case "2.12" => ("2.6.25", "2.6.14")
+        val (playVersion, circeVersion) = scalaBinaryVersion.value match {
+          case "2.12" => ("2.6.25", "0.12.3")
         }
         Seq(
-          "com.typesafe.play" %% "play-json" % playJsonVersion,
-          "com.typesafe.play" %% "play"      % playVersion % "optional",
-          "com.typesafe.play" %% "play-test" % playVersion % "test"
+          "io.circe"          %% "circe-core"   % circeVersion,
+          "io.circe"          %% "circe-parser" % circeVersion,
+          "com.typesafe.play" %% "play"         % playVersion % "optional",
+          "com.typesafe.play" %% "play-test"    % playVersion % "test"
         )
       }
     )

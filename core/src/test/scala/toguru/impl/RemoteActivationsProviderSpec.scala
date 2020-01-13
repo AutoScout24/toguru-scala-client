@@ -134,41 +134,6 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
       maybeToggleStates mustBe None
     }
 
-    "succeed if a V2 toggle response is received" in {
-      val response =
-        """
-          |{
-          |  "sequenceNo": 10,
-          |  "toggles": [
-          |    { "id": "toggle-one", "tags": {"services": "toguru"}},
-          |    { "id": "toggle-two", "tags": {"team": "Shared Services"}, "rolloutPercentage": 20}
-          |  ]
-          |}
-        """.stripMargin
-
-      val provider = createProvider(response, "")
-
-      val toggles = provider.fetchToggleStates(None).value.toggles
-
-      validateResponse(toggles)
-    }
-
-    "succeed if a V1 toggle response is received" in {
-      val response =
-        """
-          |[
-          |  { "id": "toggle-one", "tags": {"services": "toguru"}},
-          |  { "id": "toggle-two", "tags": {"team": "Shared Services"}, "rolloutPercentage": 20}
-          |]
-        """.stripMargin
-
-      val provider = createProvider(response, "")
-
-      val toggles = provider.fetchToggleStates(None).value.toggles
-
-      validateResponse(toggles)
-    }
-
     "fail if toggle endpoint returns 500" in {
       val poller: TogglePoller = _ => PollResponse(500, "", "")
       val provider             = createProvider(poller)
@@ -205,14 +170,21 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
 
   "Created activation provider" should {
 
+    def toguruResponse(body: String): Response[String] =
+      Response
+        .ok(body)
+        .copy(headers = List(Header.contentType(MediaType.parse(RemoteActivationsProvider.MimeApiV3).right.get)))
+
     "poll remote url" in {
       val stub = SttpBackendStub.synchronous.whenAnyRequest.thenRespond(
-        """
-          |{
-          |  "sequenceNo": 10,
-          |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"rolloutPercentage":20}]
-          |}
+        toguruResponse(
+          """
+            |{
+            |  "sequenceNo": 10,
+            |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"activations":[{"rollout":{"percentage":20}, "attributes":{}}]}]
+            |}
        """.stripMargin
+        )
       )
 
       val provider = createProvider(stub)
@@ -239,7 +211,7 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
           acceptHeader = req.headers
             .find(_.name == "Accept")
             .map(_.value)
-          Response.ok("""{ "sequenceNo": 10, "toggles": [] }""")
+          toguruResponse("""{ "sequenceNo": 10, "toggles": [] }""")
         }
       val provider = createProvider(stub)
 
@@ -257,15 +229,13 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
       val stub =
         SttpBackendStub.synchronous.whenAnyRequest.thenRespondWrapped { req =>
           maybeSeqNo = req.uri.paramsMap.get("seqNo")
-          Response
-            .ok(
-              """
-                |{
-                |  "sequenceNo": 10,
-                |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"activations":[{"rollout":{"percentage":20}, "attributes":{}}]}]
-                |}""".stripMargin
-            )
-            .copy(headers = List(Header.contentType(MediaType.parse(RemoteActivationsProvider.MimeApiV3).right.get)))
+          toguruResponse(
+            """
+              |{
+              |  "sequenceNo": 10,
+              |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"activations":[{"rollout":{"percentage":20}, "attributes":{}}]}]
+              |}""".stripMargin
+          )
         }
 
       val provider = createProvider(stub)
