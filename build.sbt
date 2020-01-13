@@ -46,12 +46,11 @@ lazy val core = projectMatrix
     )
   )
   .jvmPlatform(
-    scalaVersions = Seq("2.12.10", "2.11.12"),
+    scalaVersions = Seq("2.12.10"),
     settings = Seq(
       libraryDependencies ++= {
         val (playVersion, playJsonVersion) = scalaBinaryVersion.value match {
           case "2.12" => ("2.6.25", "2.6.14")
-          case "2.11" => ("2.5.19", "2.5.19")
         }
         Seq(
           "com.typesafe.play" %% "play-json" % playJsonVersion,
