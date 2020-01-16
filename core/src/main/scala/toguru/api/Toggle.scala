@@ -12,8 +12,6 @@ object Toggle {
   * This class defines a fallback activation condition to use if the remote activation provider cannot be reached.
   * The id of the toggle is used to identify the activation conditions to apply from the remote activation provider.
   *
-  * For usage examples, see [[toguru.play.PlaySupport]]
-  *
   * @param id the toggle id
   * @param default the default toggle condition.
   */

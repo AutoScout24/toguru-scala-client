@@ -16,9 +16,29 @@ ThisBuild / scoverage.ScoverageKeys.coverageFailOnMinimum := true
 addCommandAlias("format", "; scalafmt; test:scalafmt; scalafmtSbt")
 addCommandAlias("formatCheck", "; scalafmtCheck; test:scalafmtCheck; scalafmtSbtCheck")
 
+val versions = new {
+  val scala212                  = "2.12.10"
+  val play26                    = "2.6.25"
+  val circe                     = "0.12.3"
+  val sttp                      = "2.0.0-RC6"
+  val slf4j                     = "1.7.30"
+  val phiAccuralFailureDetector = "0.0.5"
+  val failsafe                  = "2.3.1"
+  val scalatest                 = "3.1.0"
+  val mockito                   = "1.10.0"
+}
+
+val dependencies = new {
+  def play(version: String) = Seq(
+    "com.typesafe.play" %% "play"      % version % Provided,
+    "com.typesafe.play" %% "play-test" % version % Test,
+  )
+}
+
 lazy val root = project
   .in(file("."))
   .aggregate(core.projectRefs: _*)
+  .aggregate(play.projectRefs: _*)
   .settings(publish / skip := true)
 
 lazy val core = projectMatrix
@@ -36,28 +56,34 @@ lazy val core = projectMatrix
       "130"
     ),
     libraryDependencies ++= Seq(
-      "com.softwaremill.sttp.client" %% "core"                        % "2.0.0-RC6",
-      "org.slf4j"                    % "slf4j-api"                    % "1.7.30",
-      "org.komamitsu"                % "phi-accural-failure-detector" % "0.0.5",
-      "net.jodah"                    % "failsafe"                     % "2.3.1",
-      "org.mockito"                  %% "mockito-scala-scalatest"     % "1.10.0" % "test",
-      "org.scalatest"                %% "scalatest"                   % "3.1.0" % "test",
-      "org.slf4j"                    % "slf4j-nop"                    % "1.7.30" % "test"
+      "io.circe"                     %% "circe-core"                  % versions.circe,
+      "io.circe"                     %% "circe-parser"                % versions.circe,
+      "com.softwaremill.sttp.client" %% "core"                        % versions.sttp,
+      "org.slf4j"                    % "slf4j-api"                    % versions.slf4j,
+      "org.komamitsu"                % "phi-accural-failure-detector" % versions.phiAccuralFailureDetector,
+      "net.jodah"                    % "failsafe"                     % versions.failsafe,
+      "org.mockito"                  %% "mockito-scala-scalatest"     % versions.mockito % "test",
+      "org.scalatest"                %% "scalatest"                   % versions.scalatest % "test",
+      "org.slf4j"                    % "slf4j-nop"                    % versions.slf4j % "test",
     )
   )
   .jvmPlatform(
-    scalaVersions = Seq("2.12.10"),
-    settings = Seq(
-      libraryDependencies ++= {
-        val (playVersion, circeVersion) = scalaBinaryVersion.value match {
-          case "2.12" => ("2.6.25", "0.12.3")
-        }
-        Seq(
-          "io.circe"          %% "circe-core"   % circeVersion,
-          "io.circe"          %% "circe-parser" % circeVersion,
-          "com.typesafe.play" %% "play"         % playVersion % "optional",
-          "com.typesafe.play" %% "play-test"    % playVersion % "test"
-        )
-      }
+    scalaVersions = Seq(versions.scala212),
+  )
+
+lazy val play = (projectMatrix in file("play"))
+  .enablePlugins(SemVerPlugin)
+  .dependsOn(core)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % versions.scalatest % "test",
+    )
+  )
+  .customRow(
+    scalaVersions = Seq(versions.scala212),
+    axisValues = Seq(PlayAxis.play26, VirtualAxis.jvm),
+    _.settings(
+      moduleName := "toguru-scala-client-play26",
+      libraryDependencies ++= dependencies.play(versions.play26),
     )
   )
