@@ -18,13 +18,13 @@ object ToggleState {
       } yield Condition.UuidRange(1 to rollout.percentage)
 
       val attributes = for {
-        activation <- activations.headOption.to[Seq]
+        activation <- activations.headOption.toSeq
         (k, v)     <- activation.attributes
       } yield Attribute(k, v)
 
-      (attributes :+ rollout.getOrElse(Condition.Off)).to[List] match {
+      (attributes :+ rollout.getOrElse(Condition.Off)).toList match {
         case Seq(c) => c
-        case cs     => All(cs.to[Set])
+        case cs     => All(cs.toSet)
       }
     }
 
@@ -43,7 +43,7 @@ class ToggleStateActivations(toggleStates: ToggleStates) extends Activations {
 
   override def apply(toggle: Toggle) = conditions.getOrElse(toggle.id, toggle.default)
 
-  override def apply(): Traversable[ToggleState] = toggleStates.toggles
+  override def apply(): Iterable[ToggleState] = toggleStates.toggles
 
   override def togglesFor(service: String): Map[ToggleId, Condition] =
     toggleStates.toggles

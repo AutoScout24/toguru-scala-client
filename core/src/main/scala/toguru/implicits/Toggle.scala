@@ -5,7 +5,7 @@ import toguru.impl.{ToggleState, TogglesString}
 
 object toggle {
 
-  implicit class TogglesToString(toggles: Traversable[ToggleState]) {
+  implicit class TogglesToString(toggles: Iterable[ToggleState]) {
 
     def buildString(implicit toggling: Toggling): String = TogglesString.build {
       import toggling.client

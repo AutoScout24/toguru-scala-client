@@ -173,7 +173,14 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
     def toguruResponse(body: String): Response[String] =
       Response
         .ok(body)
-        .copy(headers = List(Header.contentType(MediaType.parse(RemoteActivationsProvider.MimeApiV3).right.get)))
+        .copy(headers = List(
+          Header.contentType(
+            MediaType
+              .parse(RemoteActivationsProvider.MimeApiV3)
+              .getOrElse(throw new IllegalArgumentException)
+          )
+        )
+        )
 
     "poll remote url" in {
       val stub = SttpBackendStub.synchronous.whenAnyRequest.thenRespond(

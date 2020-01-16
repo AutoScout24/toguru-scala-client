@@ -19,6 +19,6 @@ object Condition {
   def apply(conditions: Condition*): Condition = conditions match {
     case Nil    => Condition.On
     case Seq(c) => c
-    case cs     => All(cs.to[Set])
+    case cs     => All(cs.toSet)
   }
 }

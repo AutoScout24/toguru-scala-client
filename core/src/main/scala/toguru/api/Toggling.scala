@@ -25,7 +25,7 @@ trait Toggling {
     *
     * @return
     */
-  def apply(): Traversable[ToggleState] = activations()
+  def apply(): Iterable[ToggleState] = activations()
 
   /**
     * Returns a toggling string for downstream services.

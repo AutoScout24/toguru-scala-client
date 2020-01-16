@@ -38,7 +38,7 @@ object TogglesString {
     * @return A feature string in the format of feature1=true|feature2=false|feature3=true. Where all feature objects in
     *         `features` are covered in the output.
     */
-  def build(toggles: Traversable[(ToggleId, Boolean)]): String =
+  def build(toggles: Iterable[(ToggleId, Boolean)]): String =
     toggles.map { case (id, on) => s"$id=$on" }.mkString("|")
 
 }

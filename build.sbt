@@ -18,14 +18,17 @@ addCommandAlias("formatCheck", "; scalafmtCheck; test:scalafmtCheck; scalafmtSbt
 
 val versions = new {
   val scala212                  = "2.12.10"
+  val scala213                  = "2.13.1"
   val play26                    = "2.6.25"
+  val play27                    = "2.7.4"
+  val play28                    = "2.8.0"
   val circe                     = "0.12.3"
   val sttp                      = "2.0.0-RC6"
   val slf4j                     = "1.7.30"
   val phiAccuralFailureDetector = "0.0.5"
   val failsafe                  = "2.3.1"
   val scalatest                 = "3.1.0"
-  val mockito                   = "1.10.0"
+  val mockito                   = "1.10.4"
 }
 
 val dependencies = new {
@@ -51,9 +54,6 @@ lazy val core = projectMatrix
       "-deprecation",
       "-feature",
       "-Xfatal-warnings",
-      "-Yno-adapted-args",
-      "-Xmax-classfile-name",
-      "130"
     ),
     libraryDependencies ++= Seq(
       "io.circe"                     %% "circe-core"                  % versions.circe,
@@ -68,7 +68,7 @@ lazy val core = projectMatrix
     )
   )
   .jvmPlatform(
-    scalaVersions = Seq(versions.scala212),
+    scalaVersions = Seq(versions.scala213, versions.scala212),
   )
 
 lazy val play = (projectMatrix in file("play"))
@@ -77,6 +77,23 @@ lazy val play = (projectMatrix in file("play"))
   .settings(
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % versions.scalatest % "test",
+      "org.slf4j"     % "slf4j-nop"  % versions.slf4j     % "test",
+    )
+  )
+  .customRow(
+    scalaVersions = Seq(versions.scala213, versions.scala212),
+    axisValues = Seq(PlayAxis.play28, VirtualAxis.jvm),
+    _.settings(
+      moduleName := "toguru-scala-client-play28",
+      libraryDependencies ++= dependencies.play(versions.play28),
+    )
+  )
+  .customRow(
+    scalaVersions = Seq(versions.scala213, versions.scala212),
+    axisValues = Seq(PlayAxis.play27, VirtualAxis.jvm),
+    _.settings(
+      moduleName := "toguru-scala-client-play27",
+      libraryDependencies ++= dependencies.play(versions.play27),
     )
   )
   .customRow(
