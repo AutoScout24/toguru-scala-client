@@ -5,9 +5,9 @@ import toguru.api.{Activations, ClientInfo, Toggling, ToguruClient}
 
 package object play {
 
-  type PlayToguruClient = ToguruClient[Request[_]]
+  type PlayToguruClient = ToguruClient[RequestHeader]
 
-  type PlayClientProvider = ClientInfo.Provider[Request[_]]
+  type PlayClientProvider = ClientInfo.Provider[RequestHeader]
 
   class ToggledRequest[A](val client: ClientInfo, val activations: Activations, request: Request[A])
       extends WrappedRequest[A](request)
