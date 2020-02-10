@@ -2,6 +2,8 @@ ThisBuild / organization := "com.autoscout24"
 ThisBuild / licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 ThisBuild / bintrayOrganization := Some("autoscout24")
 
+ThisBuild / gitVersioningSnapshotLowerBound := "3.0.0"
+
 ThisBuild / resolvers ++= Seq(
   Resolver.jcenterRepo,
   Resolver.bintrayRepo("autoscout24", "maven"),
@@ -36,7 +38,6 @@ lazy val core = projectMatrix
     libraryDependencies ++= Seq(
       "org.scalaj"                 %% "scalaj-http"                 % "2.3.0",
       "com.typesafe.scala-logging" %% "scala-logging"               % "3.5.0",
-      "io.dropwizard.metrics"      % "metrics-core"                 % "3.1.5",
       "org.komamitsu"              % "phi-accural-failure-detector" % "0.0.5",
       "com.hootsuite"              %% "scala-circuit-breaker"       % "1.0.5",
       "org.mockito"                %% "mockito-scala-scalatest"     % "1.10.0" % "test",

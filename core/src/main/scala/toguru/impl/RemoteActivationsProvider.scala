@@ -3,7 +3,9 @@ package toguru.impl
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 
-import com.hootsuite.circuitbreaker.CircuitBreakerBuilder
+import com.hootsuite.circuitbreaker.{CircuitBreaker, CircuitBreakerBuilder}
+import org.komamitsu.failuredetector.PhiAccuralFailureDetector
+
 import com.typesafe.scalalogging.StrictLogging
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
@@ -42,7 +44,7 @@ object RemoteActivationsProvider {
     toggleStatesV2Reads.or(toggleStatesV1Reads)
   }
 
-  val toggleStateReads = {
+  private val toggleStateReads = {
     implicit val rolloutReads    = Json.reads[Rollout]
     implicit val activationReads = Json.reads[ToggleActivation]
 
@@ -54,7 +56,7 @@ object RemoteActivationsProvider {
     Json.reads[ToggleStates]
   }
 
-  val executor = Executors.newScheduledThreadPool(1)
+  private val executor = Executors.newScheduledThreadPool(1)
   sys.addShutdownHook(executor.shutdownNow())
 
   private val circuitBreakerBuilder = CircuitBreakerBuilder(
@@ -100,27 +102,41 @@ class RemoteActivationsProvider(
     val pollInterval: Duration = 2.seconds,
     val circuitBreakerBuilder: CircuitBreakerBuilder = RemoteActivationsProvider.circuitBreakerBuilder
 ) extends Activations.Provider
-    with ToguruClientMetrics
     with StrictLogging {
 
-  val circuitBreaker = circuitBreakerBuilder.build()
+  private val circuitBreaker: CircuitBreaker = circuitBreakerBuilder.build()
 
-  val schedule = executor.scheduleAtFixedRate(new Runnable() {
+  private val connectivity: PhiAccuralFailureDetector = {
+    val builder = new PhiAccuralFailureDetector.Builder()
+
+    builder.setThreshold(16)
+    builder.setMaxSampleSize(200)
+    builder.setAcceptableHeartbeatPauseMillis(pollInterval.toMillis)
+    builder.setFirstHeartbeatEstimateMillis(pollInterval.toMillis)
+    builder.setMinStdDeviationMillis(100)
+
+    builder.build()
+  }
+
+  {
+    // this heartbeat call is needed to kickoff phi computation
+    connectivity.heartbeat()
+    sys.addShutdownHook { close() }
+  }
+
+  private val schedule = executor.scheduleAtFixedRate(new Runnable() {
     def run(): Unit = update()
   }, pollInterval.toMillis, pollInterval.toMillis, TimeUnit.MILLISECONDS)
 
-  sys.addShutdownHook { close() }
-
   val currentActivation = new AtomicReference[Activations](DefaultActivations)
 
-  def update() = {
+  def update(): Unit = {
     val sequenceNo = currentActivation.get().stateSequenceNo
     fetchToggleStates(sequenceNo).foreach(ts => currentActivation.set(new ToggleStateActivations(ts)))
   }
 
   def close(): RemoteActivationsProvider = {
     schedule.cancel(true)
-    deregister()
     this
   }
 
@@ -146,29 +162,25 @@ class RemoteActivationsProvider(
         val tryToggleStates = parseBody(r)
         (code, tryToggleStates) match {
           case (200, Success(toggleStates)) if sequenceNoValid(toggleStates) =>
-            fetchSuccess()
             Some(toggleStates)
 
           case (200, Success(toggleStates)) =>
             logger.warn(
               s"Server response contains stale state (sequenceNo. is '${toggleStates.sequenceNo.mkString}'), client sequenceNo is '${sequenceNo.mkString}'."
             )
-            fetchFailed()
             None
 
           case _ =>
             logger.warn(s"Polling registry failed, got response code $code and body '$body'")
-            fetchFailed()
             None
         }
       case Failure(e) =>
         logger.warn(s"Polling registry failed (${e.getClass.getName}: ${e.getMessage})")
-        connectError()
         None
     }
   }
 
-  override def apply() = currentActivation.get()
+  override def apply(): Activations = currentActivation.get()
 
-  override def currentSequenceNo: Option[Long] = apply().stateSequenceNo
+  override def healthy(): Boolean = connectivity.isAvailable()
 }
