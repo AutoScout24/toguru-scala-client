@@ -35,8 +35,8 @@ val versions = new {
 
 val dependencies = new {
   def play(version: String) = Seq(
-    "com.typesafe.play" %% "play"      % version % Provided,
-    "com.typesafe.play" %% "play-test" % version % Test,
+    "com.typesafe.play" %% "play" % version % Provided,
+    ("com.typesafe.play" %% "play-test" % version % Test).exclude("ch.qos.logback", "logback-classic"),
   )
 }
 
