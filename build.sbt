@@ -3,6 +3,8 @@ ThisBuild / licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 ThisBuild / bintrayOrganization := Some("autoscout24")
 
 ThisBuild / gitVersioningSnapshotLowerBound := "3.0.0"
+// Snapshots cannot be published on BinTray
+ThisBuild / version := (ThisBuild / version).value.replaceAll("\\-SNAPSHOT$", "")
 
 ThisBuild / resolvers ++= Seq(
   Resolver.jcenterRepo,
