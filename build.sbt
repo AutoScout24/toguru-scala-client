@@ -86,7 +86,7 @@ lazy val play = (projectMatrix in file("play"))
     scalaVersions = Seq(versions.scala213, versions.scala212),
     axisValues = Seq(PlayAxis.play28, VirtualAxis.jvm),
     _.settings(
-      moduleName := "toguru-scala-client-play28",
+      name := "toguru-scala-client-play28",
       libraryDependencies ++= dependencies.play(versions.play28),
     )
   )
@@ -94,7 +94,7 @@ lazy val play = (projectMatrix in file("play"))
     scalaVersions = Seq(versions.scala213, versions.scala212),
     axisValues = Seq(PlayAxis.play27, VirtualAxis.jvm),
     _.settings(
-      moduleName := "toguru-scala-client-play27",
+      name := "toguru-scala-client-play27",
       libraryDependencies ++= dependencies.play(versions.play27),
     )
   )
@@ -102,7 +102,7 @@ lazy val play = (projectMatrix in file("play"))
     scalaVersions = Seq(versions.scala212),
     axisValues = Seq(PlayAxis.play26, VirtualAxis.jvm),
     _.settings(
-      moduleName := "toguru-scala-client-play26",
+      name := "toguru-scala-client-play26",
       libraryDependencies ++= dependencies.play(versions.play26),
     )
   )
