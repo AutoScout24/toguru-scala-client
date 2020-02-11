@@ -21,9 +21,9 @@ object RemoteActivationsProvider {
 
   val MimeApiV3 = "application/vnd.toguru.v3+json"
 
-  case class PollResponse(code: Int, contentType: String, content: String)
+  private[toguru] case class PollResponse(code: Int, contentType: String, content: String)
 
-  type TogglePoller = Option[Long] => PollResponse
+  private[toguru] type TogglePoller = Option[Long] => PollResponse
 
   private val toggleStatesCirceDecoder: Decoder[ToggleStates] = {
     implicit val rolloutCirceDecoder: Decoder[Rollout] = new Decoder[Rollout] {
@@ -53,7 +53,7 @@ object RemoteActivationsProvider {
     }
   }
 
-  val executor = Executors.newScheduledThreadPool(1)
+  private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(1)
   sys.addShutdownHook(executor.shutdownNow())
 
   private def createCircuitBreaker(): CircuitBreaker[Any] =
@@ -108,9 +108,9 @@ class RemoteActivationsProvider(
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val circuitBreaker: CircuitBreaker[Any] = circuitBreakerBuilder()
+  private val circuitBreaker: CircuitBreaker[Any] = circuitBreakerBuilder()
 
-  val connectivity: PhiAccuralFailureDetector = {
+  private val connectivity: PhiAccuralFailureDetector = {
     val builder = new PhiAccuralFailureDetector.Builder()
 
     builder.setThreshold(16)
@@ -125,15 +125,15 @@ class RemoteActivationsProvider(
   // this heartbeat call is needed to kickoff phi computation
   connectivity.heartbeat()
 
-  val schedule: ScheduledFuture[_] = executor.scheduleAtFixedRate(new Runnable() {
+  private val schedule: ScheduledFuture[_] = executor.scheduleAtFixedRate(new Runnable() {
     def run(): Unit = update()
   }, pollInterval.toMillis, pollInterval.toMillis, TimeUnit.MILLISECONDS)
 
   sys.addShutdownHook { close() }
 
-  val currentActivation = new AtomicReference[Activations](DefaultActivations)
+  private val currentActivation = new AtomicReference[Activations](DefaultActivations)
 
-  def update() = {
+  def update(): Unit = {
     val sequenceNo = currentActivation.get().stateSequenceNo
     fetchToggleStates(sequenceNo).foreach(ts => currentActivation.set(new ToggleStateActivations(ts)))
   }
@@ -143,9 +143,9 @@ class RemoteActivationsProvider(
     this
   }
 
-  def fetchToggleStates(sequenceNo: Option[Long]): Option[ToggleStates] = {
+  private[toguru] def fetchToggleStates(sequenceNo: Option[Long]): Option[ToggleStates] = {
 
-    def sequenceNoValid(toggleStates: ToggleStates) = (sequenceNo, toggleStates.sequenceNo) match {
+    def sequenceNoValid(toggleStates: ToggleStates): Boolean = (sequenceNo, toggleStates.sequenceNo) match {
       case (None, _)          => true
       case (Some(a), Some(b)) => a <= b
       case (Some(_), None)    => false
@@ -165,7 +165,7 @@ class RemoteActivationsProvider(
         (pollResponse.code, tryToggleStates) match {
           case (200, Success(toggleStates)) if sequenceNoValid(toggleStates) =>
             circuitBreaker.recordSuccess()
-            fetchSuccess()
+            connectivity.heartbeat()
             Some(toggleStates)
           case (200, Success(toggleStates)) =>
             circuitBreaker.recordSuccess()
@@ -195,9 +195,7 @@ class RemoteActivationsProvider(
     } else None
   }
 
-  def fetchSuccess(): Unit = connectivity.heartbeat()
-
-  def healthy(): Boolean = connectivity.isAvailable()
+  override def healthy(): Boolean = connectivity.isAvailable()
 
   override def apply(): Activations = currentActivation.get()
 }

@@ -5,19 +5,19 @@ import java.util.UUID
 
 import toguru.api.{ClientInfo, Condition}
 
-case object AlwaysOnCondition extends Condition {
+private[toguru] case object AlwaysOnCondition extends Condition {
   override def applies(clientInfo: ClientInfo): Boolean = true
 }
 
-case object AlwaysOffCondition extends Condition {
+private[toguru] case object AlwaysOffCondition extends Condition {
   override def applies(clientInfo: ClientInfo): Boolean = false
 }
 
-case class All(conditions: Set[Condition]) extends Condition {
+private[toguru] case class All(conditions: Set[Condition]) extends Condition {
   override def applies(clientInfo: ClientInfo) = conditions.forall(_.applies(clientInfo))
 }
 
-case class Attribute(name: String, values: Seq[String]) extends Condition {
+private[toguru] case class Attribute(name: String, values: Seq[String]) extends Condition {
   override def applies(clientInfo: ClientInfo) = clientInfo.attributes.get(name).exists(values.contains)
 }
 
@@ -27,7 +27,7 @@ case class Attribute(name: String, values: Seq[String]) extends Condition {
   * @param f      a function that projects an UUID to an Int in the range between 1 and 100
   * @param ranges ranges from 1 to 100 (inclusive) that f(uuid) has to land in so that this condition will be true for the client uuid
   */
-case class UuidDistributionCondition(ranges: Seq[Range], f: UUID => Int) extends Condition {
+private[toguru] case class UuidDistributionCondition(ranges: Seq[Range], f: UUID => Int) extends Condition {
 
   ranges.foreach(r =>
     if (r.head < 1 || r.last > 100)
@@ -45,11 +45,11 @@ case class UuidDistributionCondition(ranges: Seq[Range], f: UUID => Int) extends
     }
 }
 
-object UuidDistributionCondition {
+private[toguru] object UuidDistributionCondition {
 
   def apply(range: Range, f: UUID => Int = defaultUuidToIntProjection): UuidDistributionCondition = apply(Seq(range), f)
 
-  val defaultUuidToIntProjection: UUID => Int = { (uuid) =>
+  val defaultUuidToIntProjection: UUID => Int = { uuid =>
     val hibits   = uuid.getMostSignificantBits
     val lobits   = uuid.getLeastSignificantBits
     val barrayHi = BigInteger.valueOf(hibits).toByteArray

@@ -39,9 +39,9 @@ case class Rollout(percentage: Int)
 
 class ToggleStateActivations(toggleStates: ToggleStates) extends Activations {
 
-  val conditions = toggleStates.toggles.map(ts => ts.id -> ts.condition).toMap
+  private val conditions = toggleStates.toggles.map(ts => ts.id -> ts.condition).toMap
 
-  override def apply(toggle: Toggle) = conditions.getOrElse(toggle.id, toggle.default)
+  override def apply(toggle: Toggle): Condition = conditions.getOrElse(toggle.id, toggle.default)
 
   override def apply(): Iterable[ToggleState] = toggleStates.toggles
 
