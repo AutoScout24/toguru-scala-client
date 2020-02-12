@@ -3,9 +3,9 @@ package toguru.impl
 import toguru.api.Toggle.ToggleId
 import toguru.api.{Activations, Condition, Toggle}
 
-case class ToggleStates(sequenceNo: Option[Long], toggles: Seq[ToggleState])
+final case class ToggleStates(sequenceNo: Option[Long], toggles: Seq[ToggleState])
 
-case class ToggleState(id: String, tags: Map[String, String], condition: Condition)
+final case class ToggleState(id: String, tags: Map[String, String], condition: Condition)
 
 object ToggleState {
 
@@ -33,11 +33,11 @@ object ToggleState {
 
 }
 
-case class ToggleActivation(rollout: Option[Rollout] = None, attributes: Map[String, Seq[String]] = Map.empty)
+final case class ToggleActivation(rollout: Option[Rollout] = None, attributes: Map[String, Seq[String]] = Map.empty)
 
-case class Rollout(percentage: Int)
+final case class Rollout(percentage: Int)
 
-class ToggleStateActivations(toggleStates: ToggleStates) extends Activations {
+final class ToggleStateActivations(toggleStates: ToggleStates) extends Activations {
 
   private val conditions = toggleStates.toggles.map(ts => ts.id -> ts.condition).toMap
 

@@ -4,7 +4,7 @@ import java.util.UUID
 
 import toguru.api.Toggle.ToggleId
 
-case class ClientInfo(
+final case class ClientInfo(
     uuid: Option[UUID] = None,
     forcedToggle: ToggleId => Option[Boolean] = (_) => None,
     attributes: Map[String, String] = Map.empty

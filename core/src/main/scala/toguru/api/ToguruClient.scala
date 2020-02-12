@@ -7,7 +7,7 @@ package toguru.api
   * @param activationsProvider the activations provider that returns the current activation state.
   * @tparam T the input type off the client info provider.
   */
-class ToguruClient[T](val clientProvider: ClientInfo.Provider[T], val activationsProvider: Activations.Provider) {
+final class ToguruClient[T](val clientProvider: ClientInfo.Provider[T], val activationsProvider: Activations.Provider) {
 
   /**
     * Create a new toggling information instance from the given input

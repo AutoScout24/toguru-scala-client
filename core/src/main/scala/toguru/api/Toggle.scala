@@ -15,7 +15,7 @@ object Toggle {
   * @param id the toggle id
   * @param default the default toggle condition.
   */
-case class Toggle(id: ToggleId, default: Condition = Condition.Off) {
+final case class Toggle(id: ToggleId, default: Condition = Condition.Off) {
 
   /**
     * Returns whether the toggle is on

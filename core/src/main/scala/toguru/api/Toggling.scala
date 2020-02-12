@@ -54,4 +54,4 @@ trait Toggling {
   * @param client the client information to use
   * @param activations the activation conditions to use
   */
-case class TogglingInfo(client: ClientInfo, activations: Activations) extends Toggling
+final case class TogglingInfo(client: ClientInfo, activations: Activations) extends Toggling
