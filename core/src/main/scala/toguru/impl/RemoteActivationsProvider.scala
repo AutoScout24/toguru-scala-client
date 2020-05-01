@@ -143,10 +143,8 @@ class RemoteActivationsProvider(
     fetchToggleStates(sequenceNo).foreach(ts => currentActivation.set(new ToggleStateActivations(ts)))
   }
 
-  def close(): RemoteActivationsProvider = {
+  def close(): Unit =
     schedule.cancel(true)
-    this
-  }
 
   private[toguru] def fetchToggleStates(sequenceNo: Option[Long]): Option[ToggleStates] = {
 

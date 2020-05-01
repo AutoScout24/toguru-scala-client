@@ -15,6 +15,7 @@ class ToguruClientSpec extends AnyFeatureSpec with Matchers with IdiomaticMockit
     new Provider {
       def healthy() = health
       def apply()   = activations
+      def close()   = ()
     }
 
   def toguruClient(

@@ -28,8 +28,11 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
   def createCircuitBreaker(): CircuitBreaker[Any] =
     new CircuitBreaker[Any]().withFailureThreshold(1000).withDelay(java.time.Duration.ofMillis(100))
 
-  def createProvider(poller: TogglePoller): RemoteActivationsProvider =
-    new RemoteActivationsProvider(poller, executor, circuitBreakerBuilder = createCircuitBreaker).close()
+  def createProvider(poller: TogglePoller): RemoteActivationsProvider = {
+    val provider = new RemoteActivationsProvider(poller, executor, circuitBreakerBuilder = createCircuitBreaker)
+    provider.close()
+    return provider
+  }
 
   def createProvider(
       response: String,

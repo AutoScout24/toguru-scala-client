@@ -11,9 +11,9 @@ object TestActivations {
 
   def apply(activations: (Toggle, Condition)*)(services: (Toggle, String)*): Activations.Provider =
     new Activations.Provider() {
-      override def apply() = new Impl(activations: _*)(services: _*)
-
+      override def apply()   = new Impl(activations: _*)(services: _*)
       override def healthy() = true
+      override def close()   = ()
     }
 
   private[toguru] class Impl(activations: (Toggle, Condition)*)(services: (Toggle, String)*) extends Activations {

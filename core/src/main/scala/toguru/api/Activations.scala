@@ -5,9 +5,8 @@ import toguru.impl.{RemoteActivationsProvider, ToggleState}
 
 object Activations {
 
-  trait Provider {
+  trait Provider extends AutoCloseable {
     def apply(): Activations
-
     def healthy(): Boolean
   }
 
