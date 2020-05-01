@@ -26,7 +26,7 @@ after_success:
   - sbt ++$TRAVIS_SCALA_VERSION coveralls
   - >
     if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_REPO_SLUG" = "Scout24/toguru-scala-client" ]; then
-      if [ "$TRAVIS_BRANCH" == "master" ] || [[ $TRAVIS_TAG ]]; then
+      if [[ $TRAVIS_TAG ]]; then
         ./publish-bintray-release.sh;
       fi
     fi
