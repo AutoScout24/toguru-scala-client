@@ -44,9 +44,10 @@ abstract class AbstractPlaySupport {
 
   def forcedToggle(toggleId: ToggleId)(implicit requestHeader: RequestHeader): Option[Boolean] = {
 
-    def lowerCaseKeys[T](m: Map[String, T]) = m.map {
-      case (k, v) => (k.toLowerCase, v)
-    }
+    def lowerCaseKeys[T](m: Map[String, T]) =
+      m.map {
+        case (k, v) => (k.toLowerCase, v)
+      }
 
     val headers = lowerCaseKeys(requestHeader.headers.toSimpleMap)
     lazy val maybeForcedFromHeader = headers
@@ -64,7 +65,7 @@ abstract class AbstractPlaySupport {
       val maybeToggleString: Option[List[String]] =
         lowerCasedKeysQueryStringMap.get("toguru").map(_.toList)
 
-      toggleId => {
+      toggleId =>
         maybeToggleString
           .map {
             case Nil => None
@@ -72,7 +73,6 @@ abstract class AbstractPlaySupport {
               parse(toggleString)(toggleId)
           }
           .getOrElse(None)
-      }
     }
 
     val maybeForcedFromQueryParam = parseToggleQueryString(toggleId)

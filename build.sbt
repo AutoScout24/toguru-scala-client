@@ -19,32 +19,33 @@ addCommandAlias("format", "; scalafmt; test:scalafmt; scalafmtSbt")
 addCommandAlias("formatCheck", "; scalafmtCheck; test:scalafmtCheck; scalafmtSbtCheck")
 
 val versions = new {
-  val scala212                  = "2.12.10"
-  val scala213                  = "2.13.1"
+  val scala212                  = "2.12.11"
+  val scala213                  = "2.13.2"
   val play26                    = "2.6.25"
   val play27                    = "2.7.4"
-  val play28                    = "2.8.0"
-  val circe                     = "0.12.3"
-  val sttp                      = "2.0.0-RC6"
+  val play28                    = "2.8.1"
+  val circe                     = "0.13.0"
+  val sttp                      = "2.1.1"
   val slf4j                     = "1.7.30"
   val phiAccuralFailureDetector = "0.0.5"
-  val failsafe                  = "2.3.1"
-  val scalatest                 = "3.1.0"
-  val mockito                   = "1.10.4"
+  val failsafe                  = "2.3.5"
+  val scalatest                 = "3.1.1"
+  val mockito                   = "1.14.0"
 }
 
 val dependencies = new {
-  def play(version: String) = Seq(
-    "com.typesafe.play" %% "play" % version % Provided,
-    ("com.typesafe.play" %% "play-test" % version % Test).exclude("ch.qos.logback", "logback-classic"),
-  )
+  def play(version: String) =
+    Seq(
+      "com.typesafe.play"  %% "play"      % version % Provided,
+      ("com.typesafe.play" %% "play-test" % version % Test).exclude("ch.qos.logback", "logback-classic"),
+    )
 }
 
 lazy val root = project
   .in(file("."))
   .aggregate(core.projectRefs: _*)
   .aggregate(play.projectRefs: _*)
-  .settings(publish / skip := true)
+  .settings(compile / skip := true, publish / skip := true)
 
 lazy val core = projectMatrix
   .in(file("core"))
@@ -55,23 +56,21 @@ lazy val core = projectMatrix
       "-unchecked",
       "-deprecation",
       "-feature",
-      "-Xfatal-warnings",
+      "-Xfatal-warnings"
     ),
     libraryDependencies ++= Seq(
-      "io.circe"                     %% "circe-core"                  % versions.circe,
-      "io.circe"                     %% "circe-parser"                % versions.circe,
-      "com.softwaremill.sttp.client" %% "core"                        % versions.sttp,
-      "org.slf4j"                    % "slf4j-api"                    % versions.slf4j,
-      "org.komamitsu"                % "phi-accural-failure-detector" % versions.phiAccuralFailureDetector,
-      "net.jodah"                    % "failsafe"                     % versions.failsafe,
-      "org.mockito"                  %% "mockito-scala-scalatest"     % versions.mockito % "test",
-      "org.scalatest"                %% "scalatest"                   % versions.scalatest % "test",
-      "org.slf4j"                    % "slf4j-nop"                    % versions.slf4j % "test",
+      "io.circe"                     %% "circe-core"                   % versions.circe,
+      "io.circe"                     %% "circe-parser"                 % versions.circe,
+      "com.softwaremill.sttp.client" %% "core"                         % versions.sttp,
+      "org.slf4j"                     % "slf4j-api"                    % versions.slf4j,
+      "org.komamitsu"                 % "phi-accural-failure-detector" % versions.phiAccuralFailureDetector,
+      "net.jodah"                     % "failsafe"                     % versions.failsafe,
+      "org.mockito"                  %% "mockito-scala-scalatest"      % versions.mockito   % "test",
+      "org.scalatest"                %% "scalatest"                    % versions.scalatest % "test",
+      "org.slf4j"                     % "slf4j-nop"                    % versions.slf4j     % "test",
     )
   )
-  .jvmPlatform(
-    scalaVersions = Seq(versions.scala213, versions.scala212),
-  )
+  .jvmPlatform(scalaVersions = Seq(versions.scala213, versions.scala212))
 
 lazy val play = (projectMatrix in file("play"))
   .enablePlugins(SemVerPlugin)
@@ -79,30 +78,21 @@ lazy val play = (projectMatrix in file("play"))
   .settings(
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % versions.scalatest % "test",
-      "org.slf4j"     % "slf4j-nop"  % versions.slf4j     % "test",
+      "org.slf4j"      % "slf4j-nop" % versions.slf4j     % "test",
     )
   )
   .customRow(
     scalaVersions = Seq(versions.scala213, versions.scala212),
     axisValues = Seq(PlayAxis.play28, VirtualAxis.jvm),
-    _.settings(
-      name := "toguru-scala-client-play28",
-      libraryDependencies ++= dependencies.play(versions.play28),
-    )
+    _.settings(name := "toguru-scala-client-play28", libraryDependencies ++= dependencies.play(versions.play28))
   )
   .customRow(
     scalaVersions = Seq(versions.scala213, versions.scala212),
     axisValues = Seq(PlayAxis.play27, VirtualAxis.jvm),
-    _.settings(
-      name := "toguru-scala-client-play27",
-      libraryDependencies ++= dependencies.play(versions.play27),
-    )
+    _.settings(name := "toguru-scala-client-play27", libraryDependencies ++= dependencies.play(versions.play27))
   )
   .customRow(
     scalaVersions = Seq(versions.scala212),
     axisValues = Seq(PlayAxis.play26, VirtualAxis.jvm),
-    _.settings(
-      name := "toguru-scala-client-play26",
-      libraryDependencies ++= dependencies.play(versions.play26),
-    )
+    _.settings(name := "toguru-scala-client-play26", libraryDependencies ++= dependencies.play(versions.play26))
   )

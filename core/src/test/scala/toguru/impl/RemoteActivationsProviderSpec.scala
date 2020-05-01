@@ -173,13 +173,14 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
     def toguruResponse(body: String): Response[String] =
       Response
         .ok(body)
-        .copy(headers = List(
-          Header.contentType(
-            MediaType
-              .parse(RemoteActivationsProvider.MimeApiV3)
-              .getOrElse(throw new IllegalArgumentException)
+        .copy(headers =
+          List(
+            Header.contentType(
+              MediaType
+                .parse(RemoteActivationsProvider.MimeApiV3)
+                .getOrElse(throw new IllegalArgumentException)
+            )
           )
-        )
         )
 
     "poll remote url" in {
@@ -247,7 +248,7 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
 
       val provider = createProvider(stub)
 
-      waitFor(100, 100.millis) { maybeSeqNo.isDefined }
+      waitFor(100, 100.millis)(maybeSeqNo.isDefined)
 
       provider.close()
 
@@ -263,9 +264,9 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
     */
   def waitFor(times: Int, wait: FiniteDuration = 2.second)(test: => Boolean): Unit = {
     val success = (1 to times).exists { i =>
-      if (test) {
+      if (test)
         true
-      } else {
+      else {
         if (i < times)
           Thread.sleep(wait.toMillis)
         false

@@ -25,10 +25,10 @@ class ToggleStateSpec extends AnyWordSpec with Matchers with IdiomaticMockito {
       Map.empty[String, String],
       activation(rollout(30), attrs = Map("culture" -> Seq("DE", "de-DE"), "version" -> Seq("1", "2")))
     ),
-    ToggleState("toggle6", Map("services"  -> "my-service,another-service"), activation(rollout(15))),
-    ToggleState("toggle7", Map("services"  -> "my-service "), activation(rollout(1))),
-    ToggleState("toggle8", Map("service"   -> " my-service"), activation(rollout(100))),
-    ToggleState("toggle9", Map("services"  -> "another-service,yet-another-service,my-service"), activation()),
+    ToggleState("toggle6", Map("services" -> "my-service,another-service"), activation(rollout(15))),
+    ToggleState("toggle7", Map("services" -> "my-service "), activation(rollout(1))),
+    ToggleState("toggle8", Map("service" -> " my-service"), activation(rollout(100))),
+    ToggleState("toggle9", Map("services" -> "another-service,yet-another-service,my-service"), activation()),
     ToggleState("toggle10", Map("services" -> "another-service, my-service, yet-another-service"), activation())
   )
 

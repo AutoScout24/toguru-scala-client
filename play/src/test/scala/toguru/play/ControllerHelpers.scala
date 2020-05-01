@@ -20,25 +20,27 @@ trait ControllerHelpers {
   class MyController @Inject() (toguru: PlayToguruClient, cc: ControllerComponents)
       extends ToggledController(toguru, cc) {
 
-    def myAction = ToggledAction { implicit request =>
-      if (toggle.isOn)
-        Ok("Toggle is on")
-      else
-        Ok("Toggle is off")
-    }
+    def myAction =
+      ToggledAction { implicit request =>
+        if (toggle.isOn)
+          Ok("Toggle is on")
+        else
+          Ok("Toggle is off")
+      }
   }
 
   class MyControllerWithOwnTogglingInfo @Inject() (toguru: PlayToguruClient, cc: ControllerComponents)
       extends AbstractController(cc) {
 
-    def myAction = Action { request =>
-      implicit val toggling = toguru(request)
+    def myAction =
+      Action { request =>
+        implicit val toggling = toguru(request)
 
-      if (toggle.isOn)
-        Ok("Toggle is on")
-      else
-        Ok("Toggle is off")
-    }
+        if (toggle.isOn)
+          Ok("Toggle is on")
+        else
+          Ok("Toggle is off")
+      }
   }
 
   def createToggledController(provider: Activations.Provider = TestActivations()()) = {

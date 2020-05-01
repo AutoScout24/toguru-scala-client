@@ -16,9 +16,10 @@ object Condition {
 
   def Attribute(name: String, values: String*): Condition = Att(name, values)
 
-  def apply(conditions: Condition*): Condition = conditions match {
-    case Nil    => Condition.On
-    case Seq(c) => c
-    case cs     => All(cs.toSet)
-  }
+  def apply(conditions: Condition*): Condition =
+    conditions match {
+      case Nil    => Condition.On
+      case Seq(c) => c
+      case cs     => All(cs.toSet)
+    }
 }

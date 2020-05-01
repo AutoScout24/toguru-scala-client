@@ -21,13 +21,14 @@ object TestActivations {
     override def apply(toggle: Toggle): Condition =
       activations.collectFirst { case (`toggle`, c) => c }.getOrElse(toggle.default)
 
-    override def apply(): Seq[ToggleState] = (activations.map(_._1) ++ services.map(_._1)).distinct.map { t =>
-      new ToggleState(
-        t.id,
-        services.find(_._1 == t).map("service" -> _._2).toMap,
-        activations.collectFirst { case (`t`, c) => c }.getOrElse(Condition.Off)
-      )
-    }
+    override def apply(): Seq[ToggleState] =
+      (activations.map(_._1) ++ services.map(_._1)).distinct.map { t =>
+        new ToggleState(
+          t.id,
+          services.find(_._1 == t).map("service" -> _._2).toMap,
+          activations.collectFirst { case (`t`, c) => c }.getOrElse(Condition.Off)
+        )
+      }
 
     override def togglesFor(service: String): Map[ToggleId, Condition] =
       services.collect { case (t, `service`) => t.id -> apply(t) }.toMap
