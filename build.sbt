@@ -21,7 +21,7 @@ addCommandAlias("formatCheck", "; scalafmtCheck; test:scalafmtCheck; scalafmtSbt
 val versions = new {
   val scala212                  = "2.12.11"
   val scala213                  = "2.13.2"
-  val play26                    = "2.6.25"
+  val play26                    = "2.8.1"
   val play27                    = "2.7.4"
   val play28                    = "2.8.1"
   val circe                     = "0.13.0"
