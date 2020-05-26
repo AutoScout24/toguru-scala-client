@@ -30,7 +30,7 @@ val versions = new {
   val phiAccuralFailureDetector = "0.0.5"
   val failsafe                  = "2.3.5"
   val scalatest                 = "3.1.1"
-  val mockito                   = "1.14.0"
+  val mockito                   = "1.14.3"
 }
 
 val dependencies = new {
