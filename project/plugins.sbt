@@ -9,6 +9,6 @@ addSbtPlugin("com.rallyhealth.sbt" % "sbt-git-versioning" % "1.4.0")
 
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.6")
 
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.3.4")
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.0")
 
 addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.5.1")
