@@ -28,7 +28,7 @@ val versions = new {
   val sttp                      = "2.1.1"
   val slf4j                     = "1.7.30"
   val phiAccuralFailureDetector = "0.0.5"
-  val failsafe                  = "2.3.5"
+  val failsafe                  = "2.4.0"
   val scalatest                 = "3.1.1"
   val mockito                   = "1.14.3"
 }
