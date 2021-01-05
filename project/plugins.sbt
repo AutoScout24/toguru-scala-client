@@ -11,4 +11,4 @@ addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.6")
 
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
 
-addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.5.2")
+addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.7.0")
