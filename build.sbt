@@ -1,6 +1,5 @@
 ThisBuild / organization := "com.autoscout24"
 ThisBuild / licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
-ThisBuild / bintrayOrganization := Some("autoscout24")
 
 ThisBuild / gitVersioningSnapshotLowerBound := "3.0.0"
 // Snapshots cannot be published on BinTray
@@ -8,15 +7,47 @@ ThisBuild / version := (ThisBuild / version).value.replaceAll("\\-SNAPSHOT$", ""
 
 ThisBuild / resolvers ++= Seq(
   Resolver.jcenterRepo,
-  Resolver.bintrayRepo("autoscout24", "maven"),
-  "Typesafe repository".at("https://repo.typesafe.com/typesafe/releases/")
+  Resolver.githubPackages("AutoScout24"),
+  "Typesafe repository".at("https://repo.typesafe.com/typesafe/releases/"),
+  "fast-releases".at("https://fast.services.as24.tech/artifactory/public/"),
+  Resolver.url(
+    "as24-ivy-releases",
+    new URL("https://fast.services.as24.tech/artifactory/public/")
+  )(Resolver.ivyStylePatterns),
+)
+
+ThisBuild / credentials += (
+  if (sys.env.contains("FAST_USER"))
+    Credentials(
+      "Artifactory Realm",
+      "fast.services.as24.tech",
+      sys.env("FAST_USER"),
+      sys.env("FAST_TOKEN")
+    )
+  else Credentials(Path.userHome / ".sbt" / ".credentials")
 )
 
 ThisBuild / scoverage.ScoverageKeys.coverageMinimum := 80
 ThisBuild / scoverage.ScoverageKeys.coverageFailOnMinimum := true
 
+ThisBuild / githubOwner := "AutoScout24"
+ThisBuild / githubRepository := "toguru-scala-client"
+
 addCommandAlias("format", "; scalafmt; test:scalafmt; scalafmtSbt")
 addCommandAlias("formatCheck", "; scalafmtCheck; test:scalafmtCheck; scalafmtSbtCheck")
+
+ThisBuild / publishMavenStyle := true
+
+publishConfiguration := publishConfiguration.value.withOverwrite(true)
+publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true)
+
+// ThisBuild / publishTo := {
+//   val fast = "https://fast.services.as24.tech/artifactory/public/"
+//   // if (isSnapshot.value) Some("snapshots".at(fast + "snapshots")) else Some("releases".at(fast + "releases"))
+//   if (isSnapshot.value) Some("snapshots".at(fast + "snapshots"))
+//   else
+//     githubPublishTo.value
+// }
 
 val versions = new {
   val scala212                  = "2.12.12"
