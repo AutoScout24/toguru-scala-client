@@ -24,6 +24,6 @@ addSbtPlugin("com.rallyhealth.sbt" % "sbt-git-versioning" % "1.6.0")
 
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
 
-addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.5.2")
+addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.8.0")
 
 addSbtPlugin("com.codecommit" % "sbt-github-packages" % "0.5.2")
