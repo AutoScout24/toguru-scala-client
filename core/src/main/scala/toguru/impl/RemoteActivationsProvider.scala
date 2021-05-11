@@ -139,8 +139,19 @@ class RemoteActivationsProvider(
   private val currentActivation = new AtomicReference[Activations](DefaultActivations)
 
   def update(): Unit = {
+
     val sequenceNo = currentActivation.get().stateSequenceNo
-    fetchToggleStates(sequenceNo).foreach(ts => currentActivation.set(new ToggleStateActivations(ts)))
+
+    def needsUpdate(newSeqNo: Option[Long]): Boolean =
+      (sequenceNo, newSeqNo) match {
+        case (None, _)          => true
+        case (Some(a), Some(b)) => a < b
+        case (Some(_), None)    => false
+      }
+
+    fetchToggleStates(sequenceNo)
+      .filter(ts => needsUpdate(ts.sequenceNo))
+      .foreach(ts => currentActivation.set(new ToggleStateActivations(ts)))
   }
 
   def close(): Unit =

@@ -31,7 +31,7 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
   def createProvider(poller: TogglePoller): RemoteActivationsProvider = {
     val provider = new RemoteActivationsProvider(poller, executor, circuitBreakerBuilder = createCircuitBreaker)
     provider.close()
-    return provider
+    provider
   }
 
   def createProvider(
@@ -256,6 +256,51 @@ class RemoteActivationsProviderSpec extends AnyWordSpec with OptionValues with M
       provider.close()
 
       maybeSeqNo mustBe Some("10")
+    }
+
+    "not update the toggles state if the sequenceNo stays the same" in {
+      val stub =
+        SttpBackendStub.synchronous.whenAnyRequest.thenRespondWrapped { req =>
+          toguruResponse(
+            """
+              |{
+              |  "sequenceNo": 10,
+              |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"activations":[{"rollout":{"percentage":20}, "attributes":{}}]}]
+              |}""".stripMargin
+          )
+        }
+
+      val provider = createProvider(stub)
+
+      waitFor(100, 100.millis)(provider().stateSequenceNo.isDefined)
+      val activations = provider()
+
+      Thread.sleep(120.millis.toMillis)
+      waitFor(100, 100.millis)(activations.eq(provider()))
+
+      provider().stateSequenceNo.contains(10)
+    }
+
+    "update the toggles state if the sequenceNo if bigger than the stored one" in {
+      var sequenceNo = 10
+      val stub =
+        SttpBackendStub.synchronous.whenAnyRequest.thenRespondWrapped { req =>
+          toguruResponse(
+            s"""
+               |{
+               |  "sequenceNo": ${sequenceNo},
+               |  "toggles": [{"id":"toggle-one","tags":{"team":"Toguru Team","services":"toguru"},"activations":[{"rollout":{"percentage":20}, "attributes":{}}]}]
+               |}""".stripMargin
+          )
+        }
+
+      val provider = createProvider(stub)
+
+      waitFor(100, 100.millis)(provider().stateSequenceNo.contains(sequenceNo))
+
+      sequenceNo = 11
+
+      waitFor(100, 100.millis)(provider().stateSequenceNo.contains(sequenceNo))
     }
   }
 

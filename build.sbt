@@ -73,7 +73,17 @@ lazy val root = project
   .in(file("."))
   .aggregate(core.projectRefs: _*)
   .aggregate(play.projectRefs: _*)
+  .aggregate(bench.projectRefs: _*)
   .settings(compile / skip := true, publish / skip := true)
+
+lazy val bench = projectMatrix
+  .in(file("bench"))
+  .enablePlugins(JmhPlugin)
+  .dependsOn(core)
+  .settings(
+    name := "toguru-scala-bench"
+  )
+  .jvmPlatform(scalaVersions = Seq(versions.scala213, versions.scala212))
 
 lazy val core = projectMatrix
   .in(file("core"))
