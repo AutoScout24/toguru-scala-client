@@ -18,7 +18,7 @@ addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.10.0")
 
 addSbtPlugin("org.scoverage" %% "sbt-scoverage" % "1.6.1")
 
-addSbtPlugin("org.scoverage" %% "sbt-coveralls" % "1.2.7")
+addSbtPlugin("org.scoverage" %% "sbt-coveralls" % "1.3.1")
 
 addSbtPlugin("com.rallyhealth.sbt" % "sbt-git-versioning" % "1.6.0")
 
